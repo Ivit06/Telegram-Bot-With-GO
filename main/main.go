@@ -6,52 +6,43 @@ import (
 	"net/http"
 	"os"
 
+	"Telegram-Bot-With-GO/internal/mariadb"
+	"Telegram-Bot-With-GO/internal/telegram"
 	"github.com/joho/godotenv"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func main() {
 	godotenv.Load()
-	botToken := os.Getenv("TELEGRAM_APITOKEN")
-	bot, _ := tgbotapi.NewBotAPI(botToken)
+	
+	bot, err := telegram.InitBot()
+	if err != nil {
+		log.Fatalf("Error en inicialitzar el bot de Telegram: %v", err)
+	}
 
-	log.Printf("Bot started as %s", bot.Self.UserName)
+	err = telegram.SetWebhook(bot)
+	if err != nil {
+		log.Fatalf("Error en configurar el webhook: %v", err)
+	}
 
-	webhookURL := os.Getenv("NGROK_URL")
-	wh, _ := tgbotapi.NewWebhook(webhookURL)
-	bot.Request(wh)
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		update, _ := bot.HandleUpdate(r)
-		if update.Message == nil {
-			return
+	database, err := mariadb.InitDB()
+	if err != nil {
+		log.Fatalf("Error en inicialitzar la base de dades: %v", err)
+	}
+	defer func() {
+		if err := database.Close(); err != nil {
+			log.Printf("Error en tancar la base de dades: %v", err)
 		}
+	}()
 
-		chatID := update.Message.Chat.ID
-		receivedText := update.Message.Text
-		firstName := update.Message.From.FirstName
-		userLanguageCode := update.Message.From.LanguageCode
-
-		var response string
-
-		switch userLanguageCode {
-		case "es":
-			response = fmt.Sprintf("¡Hola, %s! Has dicho: %s", firstName, receivedText)
-		case "ca":
-			response = fmt.Sprintf("Hola, %s! Has dit: %s", firstName, receivedText)
-		default:
-			response = fmt.Sprintf("Hello, %s! You said: %s", firstName, receivedText)
-		}
-
-		msg := tgbotapi.NewMessage(chatID, response)
-		msg.ReplyToMessageID = update.Message.MessageID
-
-		bot.Send(msg)
-	})
+	http.HandleFunc("/", telegram.HandleWebhook(bot, database))
 
 	port := os.Getenv("PORT")
 	serverAddress := fmt.Sprintf(":%s", port)
-
-	log.Printf("Bot listening on %s with webhook: %s", serverAddress, webhookURL)
-	http.ListenAndServe(serverAddress, nil)
+	webhookURL := os.Getenv("NGROK_URL")
+	log.Printf("Bot escoltant a %s amb webhook: %s", serverAddress, webhookURL)
+	err = http.ListenAndServe(serverAddress, nil)
+	if err != nil {
+		log.Fatalf("Error en iniciar el servidor: %v", err)
+	}
 }
