@@ -36,14 +36,14 @@ func InitDB() (*sql.DB, error) {
 	return database, nil
 }
 
-func UserExists(db *sql.DB, userID int64) (bool, error) {
-	var id int64
-	err := db.QueryRow("SELECT id FROM usuaris WHERE id = ?", userID).Scan(&id)
+func GetUserRole(db *sql.DB, userID int64) (string, error) {
+	var role string
+	err := db.QueryRow("SELECT role FROM usuaris WHERE id = ?", userID).Scan(&role)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return false, nil
+			return "", nil
 		}
-		return false, fmt.Errorf("error en comprovar l'usuari a la base de dades: %w", err)
+		return "", fmt.Errorf("error verificant el rol de l'usuari a la base de dades: %w", err)
 	}
-	return true, nil
+	return role, nil
 }
