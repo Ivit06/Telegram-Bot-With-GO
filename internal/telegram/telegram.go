@@ -6,8 +6,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"Telegram-Bot-With-GO/internal/mariadb"
+	"Telegram-Bot-With-GO/internal/telegram/querys"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
 )
@@ -47,17 +49,15 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB) http.HandlerFunc {
 		if update.Message != nil {
 			chatID := update.Message.Chat.ID
 			userID := update.Message.From.ID
-			receivedText := update.Message.Text
-			firstName := update.Message.From.FirstName
 			userLanguageCode := update.Message.From.LanguageCode
 
-			exists, err := mariadb.UserExists(database, userID)
+			role, err := mariadb.GetUserRole(database, userID)
 			if err != nil {
-				log.Printf("Error en comprovar l'usuari: %v", err)
+				log.Printf("Error en obtenir el rol de l'usuari: %v", err)
 				return
 			}
 
-			if !exists {
+			if role == "" {
 				notAuthorizedMessage := getUnauthorizedMessage(userLanguageCode)
 				msg := tgbotapi.NewMessage(chatID, notAuthorizedMessage)
 				_, err = bot.Send(msg)
@@ -67,21 +67,58 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			var response string
+			var keyboard tgbotapi.InlineKeyboardMarkup
+			var messageText string
 
-			switch userLanguageCode {
-			case "es":
-				response = fmt.Sprintf("¡Hola, %s! Has dicho: %s", firstName, receivedText)
-			case "ca":
-				response = fmt.Sprintf("¡Hola, %s! Has dit: %s", firstName, receivedText)
-			default:
-				response = fmt.Sprintf("¡Hello, %s! You say: %s", firstName, receivedText)
+			switch role {
+			case "admin":
+				messageText = "Selecciona una opció:"
+				keyboard = tgbotapi.NewInlineKeyboardMarkup(
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("Instàncies Actives", "show_active_instances"),
+					),
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("Accedir al CRUD", "access_crud"),
+					),
+				)
+			case "worker":
+				messageText = "Selecciona una opció:"
+				keyboard = tgbotapi.NewInlineKeyboardMarkup(
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("Instàncies Actives", "show_active_instances"),
+					),
+				)
 			}
 
-			msg := tgbotapi.NewMessage(chatID, response)
-			msg.ReplyToMessageID = update.Message.MessageID
+			msg := tgbotapi.NewMessage(chatID, messageText)
+			msg.ReplyMarkup = &keyboard
+			_, err = bot.Send(msg)
+			if err != nil {
+				log.Printf("Error en enviar el missatge amb el teclat: %v", err)
+			}
+		} else if update.CallbackQuery != nil {
+			callback := update.CallbackQuery
+			chatID := callback.Message.Chat.ID
+			data := callback.Data
 
-			bot.Send(msg)
+			callbackResponse := tgbotapi.NewCallback(callback.ID, "")
+			_, err := bot.Request(callbackResponse)
+			if err != nil {
+				fmt.Printf("Error en respondre al callback: %v\n", err)
+			}
+
+			switch {
+			case data == "show_active_instances":
+				querys.QueryActiveNodes(bot, chatID)
+			case data == "access_crud":
+				msg := tgbotapi.NewMessage(chatID, "L'accés al CRUD encara no està implementat.")
+				bot.Send(msg)
+			case strings.HasPrefix(data, "node_"):
+				instance := strings.TrimPrefix(data, "node_")
+				responseMessage := fmt.Sprintf("Les funcionalitats de mètriques per a la instància '%s' estan en procés de desenvolupament.", instance)
+				msg := tgbotapi.NewMessage(chatID, responseMessage)
+				bot.Send(msg)
+			}
 		}
 	}
 }
