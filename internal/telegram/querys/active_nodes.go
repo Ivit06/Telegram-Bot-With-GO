@@ -24,16 +24,7 @@ func QueryActiveNodes(bot *tgbotapi.BotAPI, chatID int64) {
 
 	resp, _ := http.Get(apiURL)
 
-	var prometheusResponse struct {
-		Status string `json:"status"`
-		Data   struct {
-			ResultType string `json:"resultType"`
-			Result     []struct {
-				Metric map[string]string `json:"metric"`
-				Value  []interface{}       `json:"value"`
-			} `json:"result"`
-		} `json:"data"`
-	}
+	var prometheusResponse PrometheusResponse
 
 	json.NewDecoder(resp.Body).Decode(&prometheusResponse)
 
