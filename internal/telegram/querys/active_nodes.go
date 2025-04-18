@@ -22,13 +22,7 @@ func QueryActiveNodes(bot *tgbotapi.BotAPI, chatID int64) {
 	query := url.QueryEscape("up{job=\"fuji\"} == 1")
 	apiURL := fmt.Sprintf("%s/api/v1/query?query=%s", prometheusURL, query)
 
-	resp, err := http.Get(apiURL)
-	if err != nil {
-		msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error al consultar Prometheus: %v", err))
-		bot.Send(msg)
-		return
-	}
-	defer resp.Body.Close()
+	resp, _ := http.Get(apiURL)
 
 	var prometheusResponse struct {
 		Status string `json:"status"`
@@ -41,23 +35,7 @@ func QueryActiveNodes(bot *tgbotapi.BotAPI, chatID int64) {
 		} `json:"data"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&prometheusResponse); err != nil {
-		msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error al decodificar la resposta de Prometheus: %v", err))
-		bot.Send(msg)
-		return
-	}
-
-	if prometheusResponse.Status != "success" {
-		msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error en la resposta de Prometheus: %s", prometheusResponse.Status))
-		bot.Send(msg)
-		return
-	}
-
-	if len(prometheusResponse.Data.Result) == 0 {
-		msg := tgbotapi.NewMessage(chatID, "No s'han trobat nodes actius.")
-		bot.Send(msg)
-		return
-	}
+	json.NewDecoder(resp.Body).Decode(&prometheusResponse)
 
 	var keyboardRows [][]tgbotapi.InlineKeyboardButton
 	for _, result := range prometheusResponse.Data.Result {
