@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"log"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -22,7 +23,13 @@ func QueryActiveNodes(bot *tgbotapi.BotAPI, chatID int64) {
 	query := url.QueryEscape("up{job=\"fuji\"} == 1")
 	apiURL := fmt.Sprintf("%s/api/v1/query?query=%s", prometheusURL, query)
 
-	resp, _ := http.Get(apiURL)
+	resp, err := http.Get(apiURL)
+	if err != nil {
+		log.Printf("Error al consultar els nodes actius: %v", err)
+		bot.Send(tgbotapi.NewMessage(chatID, fmt.Sprintf("Error en obtenir la llista de nodes actius: %v", err)))
+		return
+	}
+	defer resp.Body.Close()
 
 	var prometheusResponse PrometheusResponse
 

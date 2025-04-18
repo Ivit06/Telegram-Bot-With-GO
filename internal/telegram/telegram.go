@@ -145,8 +145,10 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB) http.HandlerFunc {
 			case strings.HasPrefix(data, "get_cpu_info_"):
                 instance := strings.TrimPrefix(data, "get_cpu_info_")
                 querys.GetCPUUsagePercentage(bot, chatID, instance)
-			case strings.HasPrefix(data, "get_ram_info_"),
-				strings.HasPrefix(data, "get_storage_info_"),
+			case strings.HasPrefix(data, "get_ram_info_"):
+				instance := strings.TrimPrefix(data, "get_ram_info_")
+				querys.GetRAMUsagePercentage(bot, chatID, instance)
+			case strings.HasPrefix(data, "get_storage_info_"),
 				strings.HasPrefix(data, "get_network_info_"):
 				msg := tgbotapi.NewMessage(chatID, "Aquesta funcionalitat de mètriques encara no està implementada.")
 				bot.Send(msg)
