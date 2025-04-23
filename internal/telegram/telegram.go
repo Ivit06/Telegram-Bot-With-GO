@@ -10,6 +10,7 @@ import (
 
 	"Telegram-Bot-With-GO/internal/mariadb"
 	"Telegram-Bot-With-GO/internal/telegram/querys"
+	"Telegram-Bot-With-GO/internal/telegram/crud"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
 )
@@ -38,7 +39,7 @@ func SetWebhook(bot *tgbotapi.BotAPI) error {
 	return nil
 }
 
-func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB) http.HandlerFunc {
+func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		update, err := bot.HandleUpdate(r)
 		if err != nil {
@@ -124,7 +125,9 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB) http.HandlerFunc {
 				msg := tgbotapi.NewMessage(chatID, "Selecciona una acció del CRUD:")
 				msg.ReplyMarkup = &keyboard
 				bot.Send(msg)
-			case data == "crud_crear", data == "crud_llistar", data == "crud_actualitzar", data == "crud_eliminar":
+			case data == "crud_llistar":
+				crud.LlistarElements(bot, chatID, crudDB)
+			case data == "crud_crear", data == "crud_actualitzar", data == "crud_eliminar":
 				msg := tgbotapi.NewMessage(chatID, "Aquesta funcionalitat del CRUD encara no està implementada.")
 				bot.Send(msg)
 			case strings.HasPrefix(data, "node_"):

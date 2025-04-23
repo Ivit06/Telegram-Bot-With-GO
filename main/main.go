@@ -35,7 +35,17 @@ func main() {
 		}
 	}()
 
-	http.HandleFunc("/", telegram.HandleWebhook(bot, database))
+	crudDatabase, err := mariadb.InitDBCRUD()
+	if err != nil {
+		log.Fatalf("Error en inicialitzar la base de dades del CRUD: %v", err)
+	}
+	defer func() {
+		if err := crudDatabase.Close(); err != nil {
+			log.Printf("Error en tancar la base de dades del CRUD: %v", err)
+		}
+	}()
+
+	http.HandleFunc("/", telegram.HandleWebhook(bot, database, crudDatabase))
 
 	port := os.Getenv("PORT")
 	serverAddress := fmt.Sprintf(":%s", port)
