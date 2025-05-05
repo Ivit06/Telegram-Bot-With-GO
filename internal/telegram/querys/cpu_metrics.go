@@ -15,7 +15,7 @@ import (
 func GetCPUUsagePercentage(bot *tgbotapi.BotAPI, chatID int64, instance string) {
 	prometheusURL := os.Getenv("PROMETHEUS_URL")
 
-	query := url.QueryEscape(fmt.Sprintf("100 - (avg by(instance) (rate(node_cpu_seconds_total{job=\"fuji\", instance=\"%s\", mode=\"idle\"}[2m])) * 100)", instance))
+	query := url.QueryEscape(fmt.Sprintf("100 - (avg by(instance) (rate(node_cpu_seconds_total{job=\"dinf-node-exporter\", instance=\"%s\", mode=\"idle\"}[2m])) * 100)", instance))
 	apiURL := fmt.Sprintf("%s/api/v1/query?query=%s", prometheusURL, query)
 
 	resp, err := http.Get(apiURL)
