@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -112,6 +113,69 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 					if err != nil {
 						log.Printf("Error en enviar el missatge de no autoritzat per a /start: %v", err)
 					}
+				}
+				return
+			}
+
+			if update.Message.Command() == "help" {
+				userID := update.Message.From.ID
+				chatID := update.Message.Chat.ID
+
+				role, err := mariadb.GetUserRole(database, userID)
+				if err != nil {
+					log.Printf("Error en obtenir el rol de l'usuari per a /help: %v", err)
+					msg := tgbotapi.NewMessage(chatID, "Error en obtenir la informació d'ajuda.")
+					_, err = bot.Send(msg)
+					if err != nil {
+						log.Printf("Error en enviar el missatge d'error d'ajuda: %v", err)
+					}
+					return
+				}
+
+				var helpText string
+				messagesDir := "messeges/"
+
+				switch role {
+				case "admin":
+					adminHelpBytes, err := os.ReadFile(messagesDir + "admin_help.json")
+					if err != nil {
+						log.Printf("Error en llegir el fitxer d'ajuda d'admin: %v", err)
+						helpText = "Les ajudes per a administradors no estan disponibles en aquest moment."
+					} else {
+						var data map[string]string
+						err = json.Unmarshal(adminHelpBytes, &data)
+						if err != nil {
+							log.Printf("Error en parsejar el fitxer JSON d'ajuda d'admin: %v", err)
+							helpText = "Error en carregar l'ajuda per a administradors."
+						} else if msg, ok := data["ca"]; ok {
+							helpText = msg
+						} else {
+							helpText = "Ajuda per a administradors no disponible en català."
+						}
+					}
+				case "worker":
+					workerHelpBytes, err := os.ReadFile(messagesDir + "worker_help.json")
+					if err != nil {
+						log.Printf("Error en llegir el fitxer d'ajuda de worker: %v", err)
+						helpText = "Les ajudes per a treballadors no estan disponibles en aquest moment."
+					} else {
+						var data map[string]string
+						err = json.Unmarshal(workerHelpBytes, &data)
+						if err != nil {
+							log.Printf("Error en parsejar el fitxer JSON d'ajuda de worker: %v", err)
+							helpText = "Error en carregar l'ajuda per a treballadors."
+						} else if msg, ok := data["ca"]; ok {
+							helpText = msg
+						} else {
+							helpText = "Ajuda per a treballadors no disponible en català."
+						}
+					}
+				}
+
+				msg := tgbotapi.NewMessage(chatID, helpText)
+				_, err = bot.Send(msg)
+				if err != nil {
+					log.Printf("Error en enviar el missatge d'ajuda: %v", err)
 				}
 				return
 			}
