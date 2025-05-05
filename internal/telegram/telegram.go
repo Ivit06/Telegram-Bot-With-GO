@@ -152,8 +152,8 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				instance := strings.TrimPrefix(data, "get_storage_info_")
 				querys.GetStorageUsage(bot, chatID, instance)
 			case strings.HasPrefix(data, "get_network_info_"):
-				msg := tgbotapi.NewMessage(chatID, "Aquesta funcionalitat de mètriques encara no està implementada.")
-				bot.Send(msg)
+				instance := strings.TrimPrefix(data, "get_network_info_")
+				querys.GetActivePorts(bot, chatID, instance)
 			}
 		}
 	}
