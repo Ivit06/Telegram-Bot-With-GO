@@ -99,10 +99,25 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 		if update.CallbackQuery != nil {
 			callback := update.CallbackQuery
 			chatID := callback.Message.Chat.ID
+			userIDCallback := callback.From.ID
+
+			exists, err := crud.CheckUserExists(crudDB, userIDCallback)
+			if err != nil {
+				log.Printf("Error al verificar si existe el usuario: %v", err)
+				msg := tgbotapi.NewMessage(chatID, "Error al verificar l'usuari. Si us plau, intenta-ho de nou.")
+				bot.Send(msg)
+				return
+			}
+			if !exists {
+				msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("No s'ha trobat cap usuari amb la ID %d. Torna a intentar-ho", userIDCallback))
+				bot.Send(msg)
+				return
+			}
+
 			data := callback.Data
 
 			callbackResponse := tgbotapi.NewCallback(callback.ID, "")
-			_, err := bot.Request(callbackResponse)
+			_, err = bot.Request(callbackResponse)
 			if err != nil {
 				fmt.Printf("Error en respondre al callback: %v\n", err)
 			}
