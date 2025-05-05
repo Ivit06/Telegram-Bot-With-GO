@@ -15,7 +15,7 @@ import (
 func GetRAMUsagePercentage(bot *tgbotapi.BotAPI, chatID int64, instance string) {
 	prometheusURL := os.Getenv("PROMETHEUS_URL")
 
-	query := url.QueryEscape(fmt.Sprintf("(1 - (node_memory_MemAvailable_bytes{instance=\"%s\", job=\"fuji\"} / node_memory_MemTotal_bytes{instance=\"%s\", job=\"fuji\"})) * 100", instance, instance))
+	query := url.QueryEscape(fmt.Sprintf("(1 - (node_memory_MemAvailable_bytes{instance=\"%s\", job=\"dinf-node-exporter\"} / node_memory_MemTotal_bytes{instance=\"%s\", job=\"dinf-node-exporter\"})) * 100", instance, instance))
 	apiURL := fmt.Sprintf("%s/api/v1/query?query=%s", prometheusURL, query)
 
 	resp, err := http.Get(apiURL)
