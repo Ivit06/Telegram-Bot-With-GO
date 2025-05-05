@@ -94,7 +94,9 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				}
 				return
 			}
-		} else if update.CallbackQuery != nil {
+		}
+
+		if update.CallbackQuery != nil {
 			callback := update.CallbackQuery
 			chatID := callback.Message.Chat.ID
 			data := callback.Data
