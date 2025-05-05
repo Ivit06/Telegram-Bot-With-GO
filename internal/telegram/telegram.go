@@ -49,6 +49,17 @@ func SetWebhook(bot *tgbotapi.BotAPI) error {
 	return nil
 }
 
+func getUnauthorizedMessage(languageCode string) string {
+	switch languageCode {
+	case "es":
+		return "Lo siento, no estás autorizado para utilizar este bot."
+	case "ca":
+		return "Ho sento, no estàs autoritzat per utilitzar aquest bot."
+	default:
+		return "Sorry, you are not authorized to use this bot."
+	}
+}
+
 func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		update, err := bot.HandleUpdate(r)
@@ -183,16 +194,5 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				querys.GetActivePorts(bot, chatID, instance)
 			}
 		}
-	}
-}
-
-func getUnauthorizedMessage(languageCode string) string {
-	switch languageCode {
-	case "es":
-		return "Lo siento, no estás autorizado para utilizar este bot."
-	case "ca":
-		return "Ho sento, no estàs autoritzat per utilitzar aquest bot."
-	default:
-		return "Sorry, you are not authorized to use this bot."
 	}
 }

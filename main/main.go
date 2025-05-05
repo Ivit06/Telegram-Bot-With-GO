@@ -8,13 +8,13 @@ import (
 
 	"Telegram-Bot-With-GO/internal/mariadb"
 	"Telegram-Bot-With-GO/internal/telegram"
-	"github.com/joho/godotenv"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
 )
 
 func main() {
 	godotenv.Load()
-	
+
 	bot, err := telegram.InitBot()
 	if err != nil {
 		log.Fatalf("Error en inicialitzar el bot de Telegram: %v", err)
