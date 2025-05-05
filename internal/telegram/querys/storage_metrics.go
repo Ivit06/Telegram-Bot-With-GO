@@ -15,8 +15,8 @@ import (
 func GetStorageUsage(bot *tgbotapi.BotAPI, chatID int64, instance string) {
 	prometheusURL := os.Getenv("PROMETHEUS_URL")
 
-	sizeQuery := url.QueryEscape(fmt.Sprintf("node_filesystem_size_bytes{instance=\"%s\", job=\"fuji\", mountpoint=\"/\"}", instance))
-	availQuery := url.QueryEscape(fmt.Sprintf("node_filesystem_avail_bytes{instance=\"%s\", job=\"fuji\", mountpoint=\"/\"}", instance))
+	sizeQuery := url.QueryEscape(fmt.Sprintf("node_filesystem_size_bytes{instance=\"%s\", job=\"dinf-node-exporter\", mountpoint=\"/\"}", instance))
+	availQuery := url.QueryEscape(fmt.Sprintf("node_filesystem_avail_bytes{instance=\"%s\", job=\"dinf-node-exporter\", mountpoint=\"/\"}", instance))
 
 	sizeAPIURL := fmt.Sprintf("%s/api/v1/query?query=%s", prometheusURL, sizeQuery)
 	availAPIURL := fmt.Sprintf("%s/api/v1/query?query=%s", prometheusURL, availQuery)
