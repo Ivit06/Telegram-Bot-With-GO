@@ -15,6 +15,16 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var waitingForUserID = make(map[int64]bool)
+var deleteAttempts = make(map[int64]int)
+
+var createUserStep = make(map[int64]string)
+var createUserState = make(map[int64]map[string]string)
+
+var modifyUserState = make(map[int64]map[string]string)
+var modifyUserStep = make(map[int64]string)
+var waitingForUserToModifyID = make(map[int64]bool)
+
 func InitBot() (*tgbotapi.BotAPI, error) {
 	godotenv.Load()
 	botToken := os.Getenv("TELEGRAM_APITOKEN")
