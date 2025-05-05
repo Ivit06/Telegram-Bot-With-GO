@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"Telegram-Bot-With-GO/internal/mariadb"
-	"Telegram-Bot-With-GO/internal/telegram/querys"
 	"Telegram-Bot-With-GO/internal/telegram/crud"
+	"Telegram-Bot-With-GO/internal/telegram/querys"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
 )
@@ -52,50 +52,47 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 			userID := update.Message.From.ID
 			userLanguageCode := update.Message.From.LanguageCode
 
-			role, err := mariadb.GetUserRole(database, userID)
-			if err != nil {
-				log.Printf("Error en obtenir el rol de l'usuari: %v", err)
-				return
-			}
-
-			if role == "" {
-				notAuthorizedMessage := getUnauthorizedMessage(userLanguageCode)
-				msg := tgbotapi.NewMessage(chatID, notAuthorizedMessage)
-				_, err = bot.Send(msg)
+			if update.Message.Command() == "start" {
+				role, err := mariadb.GetUserRole(database, userID)
 				if err != nil {
-					log.Printf("Error en enviar el missatge de no autoritzat: %v", err)
+					log.Printf("Error en obtenir el rol de l'usuari per a /start: %v", err)
+					return
+				}
+				if role != "" {
+					messageText := "Selecciona una opció:"
+					var keyboard tgbotapi.InlineKeyboardMarkup
+					switch role {
+					case "admin":
+						keyboard = tgbotapi.NewInlineKeyboardMarkup(
+							tgbotapi.NewInlineKeyboardRow(
+								tgbotapi.NewInlineKeyboardButtonData("Instàncies Actives", "show_active_instances"),
+							),
+							tgbotapi.NewInlineKeyboardRow(
+								tgbotapi.NewInlineKeyboardButtonData("Accedir al CRUD", "access_crud"),
+							),
+						)
+					case "worker":
+						keyboard = tgbotapi.NewInlineKeyboardMarkup(
+							tgbotapi.NewInlineKeyboardRow(
+								tgbotapi.NewInlineKeyboardButtonData("Instàncies Actives", "show_active_instances"),
+							),
+						)
+					}
+					msg := tgbotapi.NewMessage(chatID, messageText)
+					msg.ReplyMarkup = &keyboard
+					_, err = bot.Send(msg)
+					if err != nil {
+						log.Printf("Error en enviar el missatge amb el teclat per a /start: %v", err)
+					}
+				} else {
+					notAuthorizedMessage := getUnauthorizedMessage(userLanguageCode)
+					msg := tgbotapi.NewMessage(chatID, notAuthorizedMessage)
+					_, err = bot.Send(msg)
+					if err != nil {
+						log.Printf("Error en enviar el missatge de no autoritzat per a /start: %v", err)
+					}
 				}
 				return
-			}
-
-			var keyboard tgbotapi.InlineKeyboardMarkup
-			var messageText string
-
-			switch role {
-			case "admin":
-				messageText = "Selecciona una opció:"
-				keyboard = tgbotapi.NewInlineKeyboardMarkup(
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("Instàncies Actives", "show_active_instances"),
-					),
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("Accedir al CRUD", "access_crud"),
-					),
-				)
-			case "worker":
-				messageText = "Selecciona una opció:"
-				keyboard = tgbotapi.NewInlineKeyboardMarkup(
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("Instàncies Actives", "show_active_instances"),
-					),
-				)
-			}
-
-			msg := tgbotapi.NewMessage(chatID, messageText)
-			msg.ReplyMarkup = &keyboard
-			_, err = bot.Send(msg)
-			if err != nil {
-				log.Printf("Error en enviar el missatge amb el teclat: %v", err)
 			}
 		} else if update.CallbackQuery != nil {
 			callback := update.CallbackQuery
@@ -146,8 +143,8 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				msg.ReplyMarkup = &keyboard
 				bot.Send(msg)
 			case strings.HasPrefix(data, "get_cpu_info_"):
-                instance := strings.TrimPrefix(data, "get_cpu_info_")
-                querys.GetCPUUsagePercentage(bot, chatID, instance)
+				instance := strings.TrimPrefix(data, "get_cpu_info_")
+				querys.GetCPUUsagePercentage(bot, chatID, instance)
 			case strings.HasPrefix(data, "get_ram_info_"):
 				instance := strings.TrimPrefix(data, "get_ram_info_")
 				querys.GetRAMUsagePercentage(bot, chatID, instance)
