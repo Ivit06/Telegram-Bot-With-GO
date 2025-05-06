@@ -92,6 +92,9 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 							tgbotapi.NewInlineKeyboardRow(
 								tgbotapi.NewInlineKeyboardButtonData("Accedir al CRUD", "access_crud"),
 							),
+							tgbotapi.NewInlineKeyboardRow(
+								tgbotapi.NewInlineKeyboardButtonData("Autodescobriment", "access_discover"),
+							),
 						)
 					case "worker":
 						keyboard = tgbotapi.NewInlineKeyboardMarkup(
@@ -256,6 +259,19 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 			case strings.HasPrefix(data, "get_network_info_"):
 				instance := strings.TrimPrefix(data, "get_network_info_")
 				querys.GetActivePorts(bot, chatID, instance)
+			case data == "access_discover":
+				keyboard := tgbotapi.NewInlineKeyboardMarkup(
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("Node Exporter", "discover_node_exporter"),
+						tgbotapi.NewInlineKeyboardButtonData("Port Exporter", "discover_port_exporter"),
+					),
+				)
+				msg := tgbotapi.NewMessage(chatID, "De què vols fer l'autodescobriment:")
+				msg.ReplyMarkup = &keyboard
+				bot.Send(msg)
+			case data == "discover_node_exporter", data == "discover_port_exporter":
+				msg := tgbotapi.NewMessage(chatID, "Aquesta funcionalitat d'autodescobriment encara no està implementada.")
+				bot.Send(msg)
 			}
 		}
 	}
