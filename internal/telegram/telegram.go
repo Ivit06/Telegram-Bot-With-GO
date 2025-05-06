@@ -12,6 +12,7 @@ import (
 	"Telegram-Bot-With-GO/internal/mariadb"
 	"Telegram-Bot-With-GO/internal/telegram/crud"
 	"Telegram-Bot-With-GO/internal/telegram/querys"
+	"Telegram-Bot-With-GO/internal/telegram/discover"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
 )
@@ -269,8 +270,31 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				msg := tgbotapi.NewMessage(chatID, "De què vols fer l'autodescobriment:")
 				msg.ReplyMarkup = &keyboard
 				bot.Send(msg)
-			case data == "discover_node_exporter", data == "discover_port_exporter":
-				msg := tgbotapi.NewMessage(chatID, "Aquesta funcionalitat d'autodescobriment encara no està implementada.")
+			case data == "discover_node_exporter":
+				msg := tgbotapi.NewMessage(chatID, "Descobriment per a Node Exporter inicialitzat.")
+				bot.Send(msg)
+
+				output, err := discover.ExecuteDiscoverNodeExporter()
+				if err != nil {
+					msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error en executar l'script: %v", err))
+					bot.Send(msg)
+					return
+				}
+
+				msg = tgbotapi.NewMessage(chatID, fmt.Sprintf("%s", output))
+				bot.Send(msg)
+			case data == "discover_port_exporter":
+				msg := tgbotapi.NewMessage(chatID, "Descobriment per a Port Exporter inicialitzat.")
+				bot.Send(msg)
+
+				output, err := discover.ExecuteDiscoverPortExporter()
+				if err != nil {
+					msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error en executar l'script: %v", err))
+					bot.Send(msg)
+					return
+				}
+
+				msg = tgbotapi.NewMessage(chatID, fmt.Sprintf("%s", output))
 				bot.Send(msg)
 			}
 		}
