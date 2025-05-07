@@ -7,14 +7,14 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
-	"strconv"
 	"regexp"
+	"strconv"
+	"strings"
 
 	"Telegram-Bot-With-GO/internal/mariadb"
 	"Telegram-Bot-With-GO/internal/telegram/crud"
-	"Telegram-Bot-With-GO/internal/telegram/querys"
 	"Telegram-Bot-With-GO/internal/telegram/discover"
+	"Telegram-Bot-With-GO/internal/telegram/querys"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
 )
@@ -189,34 +189,34 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 			if waitingForUserID[chatID] {
 				idToDelete, err := strconv.Atoi(update.Message.Text)
 				if err != nil {
-						msg := tgbotapi.NewMessage(chatID, "El ID introduït no és vàlid. Si us plau, introduïu un ID vàlid (1234)")
-						bot.Send(msg)
-						delete(waitingForUserID, chatID)
-						delete(deleteAttempts, chatID)
-						return
+					msg := tgbotapi.NewMessage(chatID, "El ID introduït no és vàlid. Si us plau, introduïu un ID vàlid (1234)")
+					bot.Send(msg)
+					delete(waitingForUserID, chatID)
+					delete(deleteAttempts, chatID)
+					return
 				}
 
 				rowsAffected, err := crud.EliminarUsuari(crudDB, int64(idToDelete))
 				attempts := deleteAttempts[chatID]
 				deleteAttempts[chatID] = attempts + 1
 				if err != nil {
-						log.Printf("Error al eliminar l'usuari: %v", err)
-						msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error al eliminar l'usuari amb ID %d.", idToDelete))
-						bot.Send(msg)
+					log.Printf("Error al eliminar l'usuari: %v", err)
+					msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error al eliminar l'usuari amb ID %d.", idToDelete))
+					bot.Send(msg)
 
 				} else if rowsAffected > 0 {
-						msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Usuari amb ID %d eliminat correctament.", idToDelete))
-						bot.Send(msg)
+					msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Usuari amb ID %d eliminat correctament.", idToDelete))
+					bot.Send(msg)
 				} else {
-						msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("No s'ha trobat cap usuari amb ID %d per eliminar. Et queden %d intents.", idToDelete, 2-attempts))
+					msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("No s'ha trobat cap usuari amb ID %d per eliminar. Et queden %d intents.", idToDelete, 2-attempts))
+					bot.Send(msg)
+					if attempts >= 2 {
+						msg := tgbotapi.NewMessage(chatID, "Torna a intentar-ho.")
 						bot.Send(msg)
-						if attempts >= 2 {
-								msg := tgbotapi.NewMessage(chatID, "Torna a intentar-ho.")
-								bot.Send(msg)
-								delete(waitingForUserID, chatID)
-								delete(deleteAttempts, chatID)
-								return
-						}
+						delete(waitingForUserID, chatID)
+						delete(deleteAttempts, chatID)
+						return
+					}
 				}
 				return
 			}
@@ -224,124 +224,267 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 			if step, ok := createUserStep[chatID]; ok {
 				switch step {
 				case "ask_id":
-						idStr := update.Message.Text
-						id, err := strconv.ParseInt(idStr, 10, 64)
-						if err != nil {
-								msg := tgbotapi.NewMessage(chatID, "La ID introduïda no és vàlida. Si us plau, introdueix una ID vàlida:")
-								bot.Send(msg)
-								return
-						}
-						createUserState[chatID]["id"] = strconv.FormatInt(id, 10)
-						createUserStep[chatID] = "ask_nombre"
-						msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el nom de l'usuari:")
+					idStr := update.Message.Text
+					id, err := strconv.ParseInt(idStr, 10, 64)
+					if err != nil {
+						msg := tgbotapi.NewMessage(chatID, "La ID introduïda no és vàlida. Si us plau, introdueix una ID vàlida:")
 						bot.Send(msg)
+						return
+					}
+					createUserState[chatID]["id"] = strconv.FormatInt(id, 10)
+					createUserStep[chatID] = "ask_nombre"
+					msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el nom de l'usuari:")
+					bot.Send(msg)
 
 				case "ask_nombre":
-						nombre := update.Message.Text
-						matched, err := regexp.MatchString(`^[a-zA-Z\s]+$`, nombre)
-						if err != nil {
-								log.Printf("Error al validar el nombre: %v", err)
-								msg := tgbotapi.NewMessage(chatID, "Error interno al validar el nom.")
-								bot.Send(msg)
-								return
-						}
-						if !matched {
-								msg := tgbotapi.NewMessage(chatID, "El nom introduït no és vàlid (només lletres i espais). Si us plau, introdueix el nom de nou:")
-								bot.Send(msg)
-								return
-						}
-						createUserState[chatID]["nombre"] = update.Message.Text
-						createUserStep[chatID] = "ask_apellido"
-						msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el primer cognom de l'usuari (opcional, /skip per ometre):")
+					nombre := update.Message.Text
+					matched, err := regexp.MatchString(`^[a-zA-Z\s]+$`, nombre)
+					if err != nil {
+						log.Printf("Error al validar el nombre: %v", err)
+						msg := tgbotapi.NewMessage(chatID, "Error interno al validar el nom.")
 						bot.Send(msg)
+						return
+					}
+					if !matched {
+						msg := tgbotapi.NewMessage(chatID, "El nom introduït no és vàlid (només lletres i espais). Si us plau, introdueix el nom de nou:")
+						bot.Send(msg)
+						return
+					}
+					createUserState[chatID]["nombre"] = update.Message.Text
+					createUserStep[chatID] = "ask_apellido"
+					msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el primer cognom de l'usuari (opcional, /skip per ometre):")
+					bot.Send(msg)
 
 				case "ask_apellido":
-						apellido := update.Message.Text
+					apellido := update.Message.Text
 
-						if strings.ToLower(apellido) == "/skip" {
-								createUserState[chatID]["apellido"] = "NULL"
-								createUserStep[chatID] = "ask_segundo_apellido"
-								msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el segon cognom de l'usuari (opcional, /skip per ometre):")
-								bot.Send(msg)
-								return
-						}
-
-						matched, err := regexp.MatchString(`^[a-zA-Z]+$`, apellido)
-						if err != nil {
-								log.Printf("Error al validar el cognom: %v", err)
-								msg := tgbotapi.NewMessage(chatID, "Error interno al validar el cognom.")
-								bot.Send(msg)
-								return
-						}
-						if !matched {
-								msg := tgbotapi.NewMessage(chatID, "El cognom introduït no és vàlid (només lletres i sense espais). Si us plau, introdueix el primer cognom de nou (/skip per ometre):")
-								bot.Send(msg)
-								return
-						}
-						createUserState[chatID]["apellido"] = update.Message.Text
+					if strings.ToLower(apellido) == "/skip" {
+						createUserState[chatID]["apellido"] = "NULL"
 						createUserStep[chatID] = "ask_segundo_apellido"
 						msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el segon cognom de l'usuari (opcional, /skip per ometre):")
 						bot.Send(msg)
+						return
+					}
+
+					matched, err := regexp.MatchString(`^[a-zA-Z]+$`, apellido)
+					if err != nil {
+						log.Printf("Error al validar el cognom: %v", err)
+						msg := tgbotapi.NewMessage(chatID, "Error interno al validar el cognom.")
+						bot.Send(msg)
+						return
+					}
+					if !matched {
+						msg := tgbotapi.NewMessage(chatID, "El cognom introduït no és vàlid (només lletres i sense espais). Si us plau, introdueix el primer cognom de nou (/skip per ometre):")
+						bot.Send(msg)
+						return
+					}
+					createUserState[chatID]["apellido"] = update.Message.Text
+					createUserStep[chatID] = "ask_segundo_apellido"
+					msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el segon cognom de l'usuari (opcional, /skip per ometre):")
+					bot.Send(msg)
 
 				case "ask_segundo_apellido":
-						segundoApellido := update.Message.Text
+					segundoApellido := update.Message.Text
 
-						if strings.ToLower(segundoApellido) == "/skip" {
-								createUserState[chatID]["segundo_apellido"] = "NULL"
-								markup := tgbotapi.NewRemoveKeyboard(true)
-								msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el rol de l'usuari (admin o worker):")
-								msg.ReplyMarkup = &markup
-								createUserStep[chatID] = "ask_rol"
-								bot.Send(msg)
-								return
-						}
-
-						if segundoApellido != "" {
-								matched, err := regexp.MatchString(`^[a-zA-Z]+$`, segundoApellido)
-								if err != nil {
-										log.Printf("Error al validar el segon cognom: %v", err)
-										msg := tgbotapi.NewMessage(chatID, "Error interno al validar el segon cognom.")
-										bot.Send(msg)
-										return
-								}
-								if !matched {
-										msg := tgbotapi.NewMessage(chatID, "El segon cognom introduït no és vàlid (només lletres i sense espais). Si us plau, introdueix el segon cognom de nou (/skip per ometre):")
-										bot.Send(msg)
-										return
-								}
-						}
-						createUserState[chatID]["segundo_apellido"] = update.Message.Text
+					if strings.ToLower(segundoApellido) == "/skip" {
+						createUserState[chatID]["segundo_apellido"] = "NULL"
 						markup := tgbotapi.NewRemoveKeyboard(true)
 						msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el rol de l'usuari (admin o worker):")
 						msg.ReplyMarkup = &markup
 						createUserStep[chatID] = "ask_rol"
 						bot.Send(msg)
+						return
+					}
+
+					if segundoApellido != "" {
+						matched, err := regexp.MatchString(`^[a-zA-Z]+$`, segundoApellido)
+						if err != nil {
+							log.Printf("Error al validar el segon cognom: %v", err)
+							msg := tgbotapi.NewMessage(chatID, "Error interno al validar el segon cognom.")
+							bot.Send(msg)
+							return
+						}
+						if !matched {
+							msg := tgbotapi.NewMessage(chatID, "El segon cognom introduït no és vàlid (només lletres i sense espais). Si us plau, introdueix el segon cognom de nou (/skip per ometre):")
+							bot.Send(msg)
+							return
+						}
+					}
+					createUserState[chatID]["segundo_apellido"] = update.Message.Text
+					markup := tgbotapi.NewRemoveKeyboard(true)
+					msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el rol de l'usuari (admin o worker):")
+					msg.ReplyMarkup = &markup
+					createUserStep[chatID] = "ask_rol"
+					bot.Send(msg)
 
 				case "ask_rol":
-						rol := strings.ToLower(update.Message.Text)
-						if rol == "admin" || rol == "worker" {
-								createUserState[chatID]["rol"] = rol
-								id, _ := strconv.ParseInt(createUserState[chatID]["id"], 10, 64)
-								nombre := createUserState[chatID]["nombre"]
-								apellido := createUserState[chatID]["apellido"]
-								segundoApellido := createUserState[chatID]["segundo_apellido"]
+					rol := strings.ToLower(update.Message.Text)
+					if rol == "admin" || rol == "worker" {
+						createUserState[chatID]["rol"] = rol
+						id, _ := strconv.ParseInt(createUserState[chatID]["id"], 10, 64)
+						nombre := createUserState[chatID]["nombre"]
+						apellido := createUserState[chatID]["apellido"]
+						segundoApellido := createUserState[chatID]["segundo_apellido"]
 
-								err := crud.CrearUsuari(crudDB, id, rol, nombre, apellido, segundoApellido)
-								if err != nil {
-										msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error al crear l'usuari amb ID %d, nom %s %s %s amb rol %s: %v", id, nombre, apellido, segundoApellido, rol, err))
-										bot.Send(msg)
-								} else {
-										msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Usuari amb ID %d, nom %s %s %s amb rol %s creat correctament.", id, nombre, apellido, segundoApellido, rol))
-										bot.Send(msg)
-								}
-
-								delete(createUserState, chatID)
-								delete(createUserStep, chatID)
-
+						err := crud.CrearUsuari(crudDB, id, rol, nombre, apellido, segundoApellido)
+						if err != nil {
+							msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error al crear l'usuari amb ID %d, nom %s %s %s amb rol %s: %v", id, nombre, apellido, segundoApellido, rol, err))
+							bot.Send(msg)
 						} else {
-								msg := tgbotapi.NewMessage(chatID, "El rol ha de ser 'admin' o 'worker'. Si us plau, introdueix el rol de nou:")
-								bot.Send(msg)
+							msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Usuari amb ID %d, nom %s %s %s amb rol %s creat correctament.", id, nombre, apellido, segundoApellido, rol))
+							bot.Send(msg)
 						}
+
+						delete(createUserState, chatID)
+						delete(createUserStep, chatID)
+
+					} else {
+						msg := tgbotapi.NewMessage(chatID, "El rol ha de ser 'admin' o 'worker'. Si us plau, introdueix el rol de nou:")
+						bot.Send(msg)
+					}
+				}
+				return
+			}
+
+			if waitingForUserToModifyID[chatID] {
+				idToModifyStr := update.Message.Text
+				idToModify, err := strconv.ParseInt(idToModifyStr, 10, 64)
+				if err != nil {
+					msg := tgbotapi.NewMessage(chatID, "La ID introduïda no és vàlida. Si us plau, introdueix una ID vàlida (només números):")
+					bot.Send(msg)
+					return
+				}
+
+				exists, err := crud.CheckUserExists(crudDB, idToModify)
+				if err != nil {
+					log.Printf("Error al verificar si existe el usuario: %v", err)
+					msg := tgbotapi.NewMessage(chatID, "Error al verificar l'usuari. Si us plau, intenta-ho de nou.")
+					bot.Send(msg)
+					delete(waitingForUserToModifyID, chatID)
+					return
+				}
+				if !exists {
+					msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("No s'ha trobat cap usuari amb la ID %d. Torna a intentar-ho", idToModify))
+					bot.Send(msg)
+					delete(waitingForUserToModifyID, chatID)
+					return
+				}
+
+				modifyUserState[chatID] = make(map[string]string)
+				modifyUserState[chatID]["id"] = strconv.FormatInt(idToModify, 10)
+				modifyUserStep[chatID] = "ask_nombre_mod"
+				msg := tgbotapi.NewMessage(chatID, "Introdueix el nou nom per a l'usuari:")
+				bot.Send(msg)
+				delete(waitingForUserToModifyID, chatID)
+				return
+			}
+
+			if step, ok := modifyUserStep[chatID]; ok {
+				userIDToModifyStr := modifyUserState[chatID]["id"]
+				userIDToModify, _ := strconv.ParseInt(userIDToModifyStr, 10, 64)
+
+				switch step {
+				case "ask_nombre_mod":
+					nombre := update.Message.Text
+					matched, err := regexp.MatchString(`^[a-zA-Z\s]*$`, nombre)
+					if err != nil {
+						log.Printf("Error al validar el nom: %v", err)
+						msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error al validar el nom per a l'usuari amb ID %d.", userIDToModify))
+						bot.Send(msg)
+						return
+					}
+					if nombre != "" && !matched {
+						msg := tgbotapi.NewMessage(chatID, "El nou nom introduït no és vàlid (només lletres i espais):")
+						bot.Send(msg)
+						return
+					}
+					modifyUserState[chatID]["nombre"] = nombre
+					modifyUserStep[chatID] = "ask_apellido_mod"
+					msg := tgbotapi.NewMessage(chatID, "Introdueix el nou primer cognom per a l'usuari (/skip per ometre):")
+					bot.Send(msg)
+
+				case "ask_apellido_mod":
+					apellido := update.Message.Text
+					if strings.ToLower(apellido) == "/skip" {
+						modifyUserState[chatID]["apellido"] = "NULL"
+						modifyUserStep[chatID] = "ask_segundo_apellido_mod"
+						msg := tgbotapi.NewMessage(chatID, "Introdueix el nou segon cognom per a l'usuari (opcional, /skip per ometre):")
+						bot.Send(msg)
+						return
+					}
+					matched, err := regexp.MatchString(`^[a-zA-Z]*$`, apellido)
+					if err != nil {
+						log.Printf("Error al validar el apellido: %v", err)
+						msg := tgbotapi.NewMessage(chatID, "Error al validar el cognom")
+						bot.Send(msg)
+						return
+					}
+					if apellido != "" && !matched {
+						msg := tgbotapi.NewMessage(chatID, "El nou cognom introduït no és vàlid (només lletres i sense espais). Si us plau, introdueix el nou primer cognom per a l'usuari (/skip per ometre):")
+						bot.Send(msg)
+						return
+					}
+					modifyUserState[chatID]["apellido"] = apellido
+					modifyUserStep[chatID] = "ask_segundo_apellido_mod"
+					msg := tgbotapi.NewMessage(chatID, "Introdueix el nou segon cognom per a l'usuari (opcional, /skip per ometre):")
+					bot.Send(msg)
+
+				case "ask_segundo_apellido_mod":
+					segundoApellido := update.Message.Text
+					if strings.ToLower(segundoApellido) == "/skip" {
+						modifyUserState[chatID]["segundo_apellido"] = "NULL"
+						markup := tgbotapi.NewRemoveKeyboard(true)
+						msg := tgbotapi.NewMessage(chatID, "Introdueix el nou rol per a l'usuari (admin o worker):")
+						msg.ReplyMarkup = &markup
+						modifyUserStep[chatID] = "ask_rol_mod"
+						bot.Send(msg)
+						return
+					}
+					matched, err := regexp.MatchString(`^[a-zA-Z]*$`, segundoApellido)
+					if err != nil {
+						log.Printf("Error al validar el segundo apellido: %v", err)
+						msg := tgbotapi.NewMessage(chatID, "Error al validar el segon cognom per a l'usuari.")
+						bot.Send(msg)
+						return
+					}
+					if segundoApellido != "" && !matched {
+						msg := tgbotapi.NewMessage(chatID, "El nou segon cognom introduït no és vàlid (només lletres i sense espais). Si us plau, introdueix el nou segon cognom per a l'usuari (/skip per ometre):")
+						bot.Send(msg)
+						return
+					}
+					modifyUserState[chatID]["segundo_apellido"] = segundoApellido
+					markup := tgbotapi.NewRemoveKeyboard(true)
+					msg := tgbotapi.NewMessage(chatID, "Introdueix el nou rol per a l'usuari (admin o worker):")
+					msg.ReplyMarkup = &markup
+					modifyUserStep[chatID] = "ask_rol_mod"
+					bot.Send(msg)
+
+				case "ask_rol_mod":
+					rol := strings.ToLower(update.Message.Text)
+					if rol == "" || rol == "admin" || rol == "worker" {
+						modifyUserState[chatID]["rol"] = rol
+
+						nombre := modifyUserState[chatID]["nombre"]
+						apellido := modifyUserState[chatID]["apellido"]
+						segundoApellido := modifyUserState[chatID]["segundo_apellido"]
+						rolFinal := modifyUserState[chatID]["rol"]
+
+						err := crud.ModificarUsuari(crudDB, userIDToModify, nombre, apellido, segundoApellido, rolFinal)
+						if err != nil {
+							msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error al modificar l'usuari amb ID %d: %v", userIDToModify, err))
+							bot.Send(msg)
+						} else {
+							msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Usuari amb ID %d modificat correctament.", userIDToModify))
+							bot.Send(msg)
+						}
+
+						delete(modifyUserState, chatID)
+						delete(modifyUserStep, chatID)
+
+					} else {
+						msg := tgbotapi.NewMessage(chatID, "El rol ha de ser 'admin' o 'worker'. Si us plau, introdueix el rol de nou:")
+						bot.Send(msg)
+					}
 				}
 				return
 			}
