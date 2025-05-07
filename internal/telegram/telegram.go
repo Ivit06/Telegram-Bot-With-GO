@@ -545,7 +545,8 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix la ID de l'usuari:")
 				bot.Send(msg)
 			case data == "crud_actualitzar":
-				msg := tgbotapi.NewMessage(chatID, "Aquesta funcionalitat del CRUD encara no està implementada.")
+				waitingForUserToModifyID[chatID] = true
+				msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix la ID de l'usuari que vols modificar:")
 				bot.Send(msg)
 			case strings.HasPrefix(data, "node_"):
 				instance := strings.TrimPrefix(data, "node_")
