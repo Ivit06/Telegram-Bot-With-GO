@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"strconv"
+	_"regexp"
 
 	"Telegram-Bot-With-GO/internal/mariadb"
 	"Telegram-Bot-With-GO/internal/telegram/crud"
@@ -183,6 +185,41 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				}
 				return
 			}
+
+			if waitingForUserID[chatID] {
+				idToDelete, err := strconv.Atoi(update.Message.Text)
+				if err != nil {
+						msg := tgbotapi.NewMessage(chatID, "El ID introduït no és vàlid. Si us plau, introduïu un ID vàlid (1234)")
+						bot.Send(msg)
+						delete(waitingForUserID, chatID)
+						delete(deleteAttempts, chatID)
+						return
+				}
+
+				rowsAffected, err := crud.EliminarUsuari(crudDB, int64(idToDelete))
+				attempts := deleteAttempts[chatID]
+				deleteAttempts[chatID] = attempts + 1
+				if err != nil {
+						log.Printf("Error al eliminar l'usuari: %v", err)
+						msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error al eliminar l'usuari amb ID %d.", idToDelete))
+						bot.Send(msg)
+
+				} else if rowsAffected > 0 {
+						msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Usuari amb ID %d eliminat correctament.", idToDelete))
+						bot.Send(msg)
+				} else {
+						msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("No s'ha trobat cap usuari amb ID %d per eliminar. Et queden %d intents.", idToDelete, 2-attempts))
+						bot.Send(msg)
+						if attempts >= 2 {
+								msg := tgbotapi.NewMessage(chatID, "Torna a intentar-ho.")
+								bot.Send(msg)
+								delete(waitingForUserID, chatID)
+								delete(deleteAttempts, chatID)
+								return
+						}
+				}
+				return
+			}
 		}
 
 		if update.CallbackQuery != nil {
@@ -230,7 +267,11 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				bot.Send(msg)
 			case data == "crud_llistar":
 				crud.LlistarElements(bot, chatID, crudDB)
-			case data == "crud_crear", data == "crud_actualitzar", data == "crud_eliminar":
+			case data == "crud_eliminar":
+				waitingForUserID[chatID] = true
+				msg := tgbotapi.NewMessage(chatID, "Si us plau, introduïu l'ID de l'usuari que voleu eliminar.")
+				bot.Send(msg)
+			case data == "crud_crear", data == "crud_actualitzar":
 				msg := tgbotapi.NewMessage(chatID, "Aquesta funcionalitat del CRUD encara no està implementada.")
 				bot.Send(msg)
 			case strings.HasPrefix(data, "node_"):
