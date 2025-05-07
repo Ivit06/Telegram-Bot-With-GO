@@ -90,13 +90,13 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 					case "admin":
 						keyboard = tgbotapi.NewInlineKeyboardMarkup(
 							tgbotapi.NewInlineKeyboardRow(
+								tgbotapi.NewInlineKeyboardButtonData("Autodescobriment", "access_discover"),
+							),
+							tgbotapi.NewInlineKeyboardRow(
 								tgbotapi.NewInlineKeyboardButtonData("Instàncies Actives", "show_active_instances"),
 							),
 							tgbotapi.NewInlineKeyboardRow(
 								tgbotapi.NewInlineKeyboardButtonData("Accedir al CRUD", "access_crud"),
-							),
-							tgbotapi.NewInlineKeyboardRow(
-								tgbotapi.NewInlineKeyboardButtonData("Autodescobriment", "access_discover"),
 							),
 						)
 					case "worker":
