@@ -201,7 +201,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				deleteAttempts[chatID] = attempts + 1
 				if err != nil {
 					log.Printf("Error al eliminar l'usuari: %v", err)
-					msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error al eliminar l'usuari amb ID %d.", idToDelete))
+					msg := tgbotapi.NewMessage(chatID, "Ja exixteix un usuari amb aquesta ID.")
 					bot.Send(msg)
 
 				} else if rowsAffected > 0 {
@@ -231,6 +231,8 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 						bot.Send(msg)
 						return
 					}
+
+					createUserState[chatID] = make(map[string]string)
 					createUserState[chatID]["id"] = strconv.FormatInt(id, 10)
 					createUserStep[chatID] = "ask_nombre"
 					msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el nom de l'usuari:")
@@ -540,7 +542,6 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				msg := tgbotapi.NewMessage(chatID, "Si us plau, introduïu l'ID de l'usuari que voleu eliminar.")
 				bot.Send(msg)
 			case data == "crud_crear":
-				createUserState[chatID] = make(map[string]string)
 				createUserStep[chatID] = "ask_id"
 				msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix la ID de l'usuari:")
 				bot.Send(msg)
