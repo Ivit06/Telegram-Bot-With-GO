@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 	"strconv"
-	_"regexp"
+	"regexp"
 
 	"Telegram-Bot-With-GO/internal/mariadb"
 	"Telegram-Bot-With-GO/internal/telegram/crud"
@@ -220,6 +220,131 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				}
 				return
 			}
+
+			if step, ok := createUserStep[chatID]; ok {
+				switch step {
+				case "ask_id":
+						idStr := update.Message.Text
+						id, err := strconv.ParseInt(idStr, 10, 64)
+						if err != nil {
+								msg := tgbotapi.NewMessage(chatID, "La ID introduïda no és vàlida. Si us plau, introdueix una ID vàlida:")
+								bot.Send(msg)
+								return
+						}
+						createUserState[chatID]["id"] = strconv.FormatInt(id, 10)
+						createUserStep[chatID] = "ask_nombre"
+						msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el nom de l'usuari:")
+						bot.Send(msg)
+
+				case "ask_nombre":
+						nombre := update.Message.Text
+						matched, err := regexp.MatchString(`^[a-zA-Z\s]+$`, nombre)
+						if err != nil {
+								log.Printf("Error al validar el nombre: %v", err)
+								msg := tgbotapi.NewMessage(chatID, "Error interno al validar el nom.")
+								bot.Send(msg)
+								return
+						}
+						if !matched {
+								msg := tgbotapi.NewMessage(chatID, "El nom introduït no és vàlid (només lletres i espais). Si us plau, introdueix el nom de nou:")
+								bot.Send(msg)
+								return
+						}
+						createUserState[chatID]["nombre"] = update.Message.Text
+						createUserStep[chatID] = "ask_apellido"
+						msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el primer cognom de l'usuari (opcional, /skip per ometre):")
+						bot.Send(msg)
+
+				case "ask_apellido":
+						apellido := update.Message.Text
+
+						if strings.ToLower(apellido) == "/skip" {
+								createUserState[chatID]["apellido"] = "NULL"
+								createUserStep[chatID] = "ask_segundo_apellido"
+								msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el segon cognom de l'usuari (opcional, /skip per ometre):")
+								bot.Send(msg)
+								return
+						}
+
+						matched, err := regexp.MatchString(`^[a-zA-Z]+$`, apellido)
+						if err != nil {
+								log.Printf("Error al validar el cognom: %v", err)
+								msg := tgbotapi.NewMessage(chatID, "Error interno al validar el cognom.")
+								bot.Send(msg)
+								return
+						}
+						if !matched {
+								msg := tgbotapi.NewMessage(chatID, "El cognom introduït no és vàlid (només lletres i sense espais). Si us plau, introdueix el primer cognom de nou (/skip per ometre):")
+								bot.Send(msg)
+								return
+						}
+						createUserState[chatID]["apellido"] = update.Message.Text
+						createUserStep[chatID] = "ask_segundo_apellido"
+						msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el segon cognom de l'usuari (opcional, /skip per ometre):")
+						bot.Send(msg)
+
+				case "ask_segundo_apellido":
+						segundoApellido := update.Message.Text
+
+						if strings.ToLower(segundoApellido) == "/skip" {
+								createUserState[chatID]["segundo_apellido"] = "NULL"
+								markup := tgbotapi.NewRemoveKeyboard(true)
+								msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el rol de l'usuari (admin o worker):")
+								msg.ReplyMarkup = &markup
+								createUserStep[chatID] = "ask_rol"
+								bot.Send(msg)
+								return
+						}
+
+						if segundoApellido != "" {
+								matched, err := regexp.MatchString(`^[a-zA-Z]+$`, segundoApellido)
+								if err != nil {
+										log.Printf("Error al validar el segon cognom: %v", err)
+										msg := tgbotapi.NewMessage(chatID, "Error interno al validar el segon cognom.")
+										bot.Send(msg)
+										return
+								}
+								if !matched {
+										msg := tgbotapi.NewMessage(chatID, "El segon cognom introduït no és vàlid (només lletres i sense espais). Si us plau, introdueix el segon cognom de nou (/skip per ometre):")
+										bot.Send(msg)
+										return
+								}
+						}
+						createUserState[chatID]["segundo_apellido"] = update.Message.Text
+						markup := tgbotapi.NewRemoveKeyboard(true)
+						msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix el rol de l'usuari (admin o worker):")
+						msg.ReplyMarkup = &markup
+						createUserStep[chatID] = "ask_rol"
+						bot.Send(msg)
+
+				case "ask_rol":
+						rol := strings.ToLower(update.Message.Text)
+						if rol == "admin" || rol == "worker" {
+								createUserState[chatID]["rol"] = rol
+								id, _ := strconv.ParseInt(createUserState[chatID]["id"], 10, 64)
+								nombre := createUserState[chatID]["nombre"]
+								apellido := createUserState[chatID]["apellido"]
+								segundoApellido := createUserState[chatID]["segundo_apellido"]
+
+								err := crud.CrearUsuari(crudDB, id, rol, nombre, apellido, segundoApellido)
+								if err != nil {
+										msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error al crear l'usuari amb ID %d, nom %s %s %s amb rol %s: %v", id, nombre, apellido, segundoApellido, rol, err))
+										bot.Send(msg)
+								} else {
+										msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Usuari amb ID %d, nom %s %s %s amb rol %s creat correctament.", id, nombre, apellido, segundoApellido, rol))
+										bot.Send(msg)
+								}
+
+								delete(createUserState, chatID)
+								delete(createUserStep, chatID)
+
+						} else {
+								msg := tgbotapi.NewMessage(chatID, "El rol ha de ser 'admin' o 'worker'. Si us plau, introdueix el rol de nou:")
+								bot.Send(msg)
+						}
+				}
+				return
+			}
 		}
 
 		if update.CallbackQuery != nil {
@@ -271,7 +396,12 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				waitingForUserID[chatID] = true
 				msg := tgbotapi.NewMessage(chatID, "Si us plau, introduïu l'ID de l'usuari que voleu eliminar.")
 				bot.Send(msg)
-			case data == "crud_crear", data == "crud_actualitzar":
+			case data == "crud_crear":
+				createUserState[chatID] = make(map[string]string)
+				createUserStep[chatID] = "ask_id"
+				msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix la ID de l'usuari:")
+				bot.Send(msg)
+			case data == "crud_actualitzar":
 				msg := tgbotapi.NewMessage(chatID, "Aquesta funcionalitat del CRUD encara no està implementada.")
 				bot.Send(msg)
 			case strings.HasPrefix(data, "node_"):
