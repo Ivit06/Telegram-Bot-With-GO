@@ -14,6 +14,7 @@ import (
 	"Telegram-Bot-With-GO/internal/mariadb"
 	"Telegram-Bot-With-GO/internal/telegram/crud"
 	"Telegram-Bot-With-GO/internal/telegram/discover"
+	"Telegram-Bot-With-GO/internal/telegram/keyboards"
 	"Telegram-Bot-With-GO/internal/telegram/querys"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
@@ -86,26 +87,14 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				if role != "" {
 					messageText := "Selecciona una opció:"
 					var keyboard tgbotapi.InlineKeyboardMarkup
+
 					switch role {
 					case "admin":
-						keyboard = tgbotapi.NewInlineKeyboardMarkup(
-							tgbotapi.NewInlineKeyboardRow(
-								tgbotapi.NewInlineKeyboardButtonData("Autodescobriment", "access_discover"),
-							),
-							tgbotapi.NewInlineKeyboardRow(
-								tgbotapi.NewInlineKeyboardButtonData("Instàncies Actives", "show_active_instances"),
-							),
-							tgbotapi.NewInlineKeyboardRow(
-								tgbotapi.NewInlineKeyboardButtonData("Accedir al CRUD", "access_crud"),
-							),
-						)
+						keyboard = keyboards.GetAdminStartKeyboard()
 					case "worker":
-						keyboard = tgbotapi.NewInlineKeyboardMarkup(
-							tgbotapi.NewInlineKeyboardRow(
-								tgbotapi.NewInlineKeyboardButtonData("Instàncies Actives", "show_active_instances"),
-							),
-						)
+						keyboard = keyboards.GetWorkerStartKeyboard()
 					}
+
 					msg := tgbotapi.NewMessage(chatID, messageText)
 					msg.ReplyMarkup = &keyboard
 					_, err = bot.Send(msg)
@@ -522,16 +511,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 			case data == "show_active_instances":
 				querys.QueryActiveNodes(bot, chatID)
 			case data == "access_crud":
-				keyboard := tgbotapi.NewInlineKeyboardMarkup(
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("CREAR", "crud_crear"),
-						tgbotapi.NewInlineKeyboardButtonData("LLISTAR", "crud_llistar"),
-					),
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("ACTUALITZAR", "crud_actualitzar"),
-						tgbotapi.NewInlineKeyboardButtonData("ELIMINAR", "crud_eliminar"),
-					),
-				)
+				keyboard := keyboards.GetCRUDKeyboard()
 				msg := tgbotapi.NewMessage(chatID, "Selecciona una acció del CRUD:")
 				msg.ReplyMarkup = &keyboard
 				bot.Send(msg)
@@ -551,16 +531,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				bot.Send(msg)
 			case strings.HasPrefix(data, "node_"):
 				instance := strings.TrimPrefix(data, "node_")
-				keyboard := tgbotapi.NewInlineKeyboardMarkup(
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("CPU", fmt.Sprintf("get_cpu_info_%s", instance)),
-						tgbotapi.NewInlineKeyboardButtonData("RAM", fmt.Sprintf("get_ram_info_%s", instance)),
-					),
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("STORAGE", fmt.Sprintf("get_storage_info_%s", instance)),
-						tgbotapi.NewInlineKeyboardButtonData("NETWORK", fmt.Sprintf("get_network_info_%s", instance)),
-					),
-				)
+				keyboard := keyboards.GetNodeMetricsKeyboard(instance)
 				msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Selecciona la mètrica per a %s:", instance))
 				msg.ReplyMarkup = &keyboard
 				bot.Send(msg)
@@ -577,12 +548,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				instance := strings.TrimPrefix(data, "get_network_info_")
 				querys.GetActivePorts(bot, chatID, instance)
 			case data == "access_discover":
-				keyboard := tgbotapi.NewInlineKeyboardMarkup(
-					tgbotapi.NewInlineKeyboardRow(
-						tgbotapi.NewInlineKeyboardButtonData("Node Exporter", "discover_node_exporter"),
-						tgbotapi.NewInlineKeyboardButtonData("Port Exporter", "discover_port_exporter"),
-					),
-				)
+				keyboard := keyboards.GetDiscoverKeyboard()
 				msg := tgbotapi.NewMessage(chatID, "De què vols fer l'autodescobriment:")
 				msg.ReplyMarkup = &keyboard
 				bot.Send(msg)
