@@ -1,18 +1,44 @@
-# Tutorial de [Nombre de tu Proyecto] en Go
+# FujiHat
 
-Este tutorial te guiará a través de los pasos necesarios para configurar y ejecutar [Nombre de tu Proyecto], una aplicación escrita en Go que [breve descripción de lo que hace la aplicación].
+Aquest tutorial et guiarà a través dels passos necessaris per a configurar i executar el nostre bot. Aquest bot està programat en Go.
 
-## Requisitos previos
+Una de les habilitats més importants dins del món de la informàtica és la capacitat d'automatitzar tasques. Això ens permet estalviar tant temps com recursos. 
 
-Antes de comenzar, asegúrate de tener instalado lo siguiente:
+Davant d’aquesta necessitat i com a administradors de sistemes hem vist adequat realitzar un projecte on oferim una eina automatitzada, útil i senzilla.
 
-* **Go:** [Enlace a la página de descarga de Go](https://golang.org/dl/)
-* **Git:** [Enlace a la página de descarga de Git](https://git-scm.com/downloads) (opcional, pero recomendado)
+Les seves funcions principals són les següents:
+
+1.  Monitoratge d'instàncies.
+2.  Autodescobriment d'instàncies.
+3.  Administració dels usuaris autoritzats.
+4.  Executa consultes a mètriques.
+5.  Enviar alertes relacionades amb els components de les instàncies.
 
 ## Instalación
 
-1.  **Clona el repositorio:**
+1. **Go:**
+   
+    ```bash
+     apt install golang-go
+    ```
+   
+2.  **Descarga las dependencias:**
 
+
+    Les dependències ja estan incloses en el repositori.
+    Si us dona algun tipus de problema es poden actualitzar les dependències amb el següent comando:
+
+    ```bash
+     go mod tidy
+    ```
+    
+3.  **Ngrok:**
+
+4.  **Base de dades (master/slave):**
+
+       Es opcional realizar la configuración de las bases de datos en una única instancia donde no haya redundancia de datos. Para ello se deberán de hacer modificaciones en el código para que únicamente se traten los datos desde la misma instancia.
+
+5.  **Clonar Repositori:**
     ```bash
     git clone [https://github.com/sindresorhus/del](https://github.com/sindresorhus/del)
     cd [Nombre de tu Proyecto]
@@ -20,13 +46,9 @@ Antes de comenzar, asegúrate de tener instalado lo siguiente:
 
     Si no tienes Git instalado, puedes descargar el código fuente como un archivo ZIP y extraerlo.
 
-2.  **Descarga las dependencias:**
 
-    ```bash
-    go mod tidy
-    ```
+6. **Prometheus**
 
-    Este comando descargará todas las dependencias necesarias para el proyecto.
 
 ## Configuración
 
