@@ -56,13 +56,13 @@ func SetWebhook(bot *tgbotapi.BotAPI) error {
 }
 
 func LogUnauthorizedAccess(userID int64, userName string, firstName string, userLanguageCode string, chatID int64) {
-    f, _ := os.OpenFile("log/unauthorized_access.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-    defer f.Close()
-    loc, _ := time.LoadLocation("Europe/Madrid")
-    currentTime := time.Now().In(loc).Format("02-01-2006 15:04:05")
-    logLine := fmt.Sprintf("[%s] Intento no autorizado - userID: %d, userName: %s, firstName: %s, language: %s, chatID: %d\n",
-        currentTime, userID, userName, firstName, userLanguageCode, chatID)
-    f.WriteString(logLine)
+	f, _ := os.OpenFile("log/unauthorized_access.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	defer f.Close()
+	loc, _ := time.LoadLocation("Europe/Madrid")
+	currentTime := time.Now().In(loc).Format("02-01-2006 15:04:05")
+	logLine := fmt.Sprintf("[%s] Intento no autorizado - userID: %d, userName: %s, firstName: %s, language: %s, chatID: %d\n",
+		currentTime, userID, userName, firstName, userLanguageCode, chatID)
+	f.WriteString(logLine)
 }
 
 func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.HandlerFunc {
@@ -78,7 +78,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 			userID := update.Message.From.ID
 			userLanguageCode := update.Message.From.LanguageCode
 			userName := update.Message.From.UserName
-            firstName := update.Message.From.FirstName
+			firstName := update.Message.From.FirstName
 
 			if update.Message.Command() == "start" {
 				role, err := mariadb.GetUserRole(database, userID)

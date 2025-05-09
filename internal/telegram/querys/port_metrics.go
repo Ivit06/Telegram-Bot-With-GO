@@ -15,9 +15,9 @@ import (
 func GetActivePorts(bot *tgbotapi.BotAPI, chatID int64, instance string) {
 	prometheusURL := os.Getenv("PROMETHEUS_URL")
 
-	parts := strings.Split(instance, ":") // Dividir la IP y el puerto
+	parts := strings.Split(instance, ":")
 	instanceIP := parts[0]
-	instanceToCheck := fmt.Sprintf("%s:8000", instanceIP) // Usar el puerto 8000 directamente
+	instanceToCheck := fmt.Sprintf("%s:8000", instanceIP)
 
 	query := url.QueryEscape(fmt.Sprintf("instance_open_ports{job=\"dinf-port-exporter\", instance=\"%s\"}", instanceToCheck))
 	apiURL := fmt.Sprintf("%s/api/v1/query?query=%s", prometheusURL, query)
