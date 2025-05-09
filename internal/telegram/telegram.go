@@ -60,7 +60,7 @@ func LogUnauthorizedAccess(userID int64, userName string, firstName string, user
 	defer f.Close()
 	loc, _ := time.LoadLocation("Europe/Madrid")
 	currentTime := time.Now().In(loc).Format("02-01-2006 15:04:05")
-	logLine := fmt.Sprintf("[%s] Intento no autorizado - userID: %d, userName: %s, firstName: %s, language: %s, chatID: %d\n",
+	logLine := fmt.Sprintf("[%s] Intent no autoritzat - userID: %d, userName: %s, firstName: %s, language: %s, chatID: %d\n",
 		currentTime, userID, userName, firstName, userLanguageCode, chatID)
 	f.WriteString(logLine)
 }
