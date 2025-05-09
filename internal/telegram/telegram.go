@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"Telegram-Bot-With-GO/internal/mariadb"
 	"Telegram-Bot-With-GO/internal/telegram/crud"
@@ -54,15 +55,14 @@ func SetWebhook(bot *tgbotapi.BotAPI) error {
 	return nil
 }
 
-func getUnauthorizedMessage(languageCode string) string {
-	switch languageCode {
-	case "es":
-		return "Lo siento, no estás autorizado para utilizar este bot."
-	case "ca":
-		return "Ho sento, no estàs autoritzat per utilitzar aquest bot."
-	default:
-		return "Sorry, you are not authorized to use this bot."
-	}
+func LogUnauthorizedAccess(userID int64, userName string, firstName string, userLanguageCode string, chatID int64) {
+    f, _ := os.OpenFile("log/unauthorized_access.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+    defer f.Close()
+    loc, _ := time.LoadLocation("Europe/Madrid")
+    currentTime := time.Now().In(loc).Format("02-01-2006 15:04:05")
+    logLine := fmt.Sprintf("[%s] Intento no autorizado - userID: %d, userName: %s, firstName: %s, language: %s, chatID: %d\n",
+        currentTime, userID, userName, firstName, userLanguageCode, chatID)
+    f.WriteString(logLine)
 }
 
 func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.HandlerFunc {
@@ -77,6 +77,8 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 			chatID := update.Message.Chat.ID
 			userID := update.Message.From.ID
 			userLanguageCode := update.Message.From.LanguageCode
+			userName := update.Message.From.UserName
+            firstName := update.Message.From.FirstName
 
 			if update.Message.Command() == "start" {
 				role, err := mariadb.GetUserRole(database, userID)
@@ -102,12 +104,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 						log.Printf("Error en enviar el missatge amb el teclat per a /start: %v", err)
 					}
 				} else {
-					notAuthorizedMessage := getUnauthorizedMessage(userLanguageCode)
-					msg := tgbotapi.NewMessage(chatID, notAuthorizedMessage)
-					_, err = bot.Send(msg)
-					if err != nil {
-						log.Printf("Error en enviar el missatge de no autoritzat per a /start: %v", err)
-					}
+					LogUnauthorizedAccess(userID, userName, firstName, userLanguageCode, chatID)
 				}
 				return
 			}
