@@ -31,6 +31,8 @@ var modifyUserState = make(map[int64]map[string]string)
 var modifyUserStep = make(map[int64]string)
 var waitingForUserToModifyID = make(map[int64]bool)
 
+var keyboard tgbotapi.InlineKeyboardMarkup
+
 func InitBot() (*tgbotapi.BotAPI, error) {
 	godotenv.Load()
 	botToken := os.Getenv("TELEGRAM_APITOKEN")
@@ -56,11 +58,21 @@ func SetWebhook(bot *tgbotapi.BotAPI) error {
 }
 
 func LogUnauthorizedAccess(userID int64, userName string, firstName string, userLanguageCode string, chatID int64) {
-	f, _ := os.OpenFile("log/unauthorized_access.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, _ := os.OpenFile("logs/unauthorized_access.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	defer f.Close()
 	loc, _ := time.LoadLocation("Europe/Madrid")
 	currentTime := time.Now().In(loc).Format("02-01-2006 15:04:05")
-	logLine := fmt.Sprintf("[%s] Intent no autoritzat - userID: %d, userName: %s, firstName: %s, language: %s, chatID: %d\n",
+	logLine := fmt.Sprintf("[%s] Intent usuari no autoritzat - ID: %d, nom d'usuari: %s, primer nom: %s, idioma: %s, ID del xat: %d\n",
+		currentTime, userID, userName, firstName, userLanguageCode, chatID)
+	f.WriteString(logLine)
+}
+
+func LogDeletedUserAccess(userID int64, userName string, firstName string, userLanguageCode string, chatID int64) {
+	f, _ := os.OpenFile("logs/old_user_access.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	defer f.Close()
+	loc, _ := time.LoadLocation("Europe/Madrid")
+	currentTime := time.Now().In(loc).Format("02-01-2006 15:04:05")
+	logLine := fmt.Sprintf("[%s] Intent usuari antic - ID: %d, nom d'usuari: %s, primer nom: %s, idioma: %s, ID del xat: %d\n",
 		currentTime, userID, userName, firstName, userLanguageCode, chatID)
 	f.WriteString(logLine)
 }
@@ -88,7 +100,6 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				}
 				if role != "" {
 					messageText := "Selecciona una opció:"
-					var keyboard tgbotapi.InlineKeyboardMarkup
 
 					switch role {
 					case "admin":
@@ -162,6 +173,8 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 							helpText = "Ajuda per a treballadors no disponible en català."
 						}
 					}
+				case "":
+					LogUnauthorizedAccess(userID, userName, firstName, userLanguageCode, chatID)
 				}
 
 				msg := tgbotapi.NewMessage(chatID, helpText)
@@ -480,19 +493,23 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 
 		if update.CallbackQuery != nil {
 			callback := update.CallbackQuery
-			chatID := callback.Message.Chat.ID
+			chatID := int64(0)
+			if callback.Message != nil {
+				chatID = callback.Message.Chat.ID
+			}
 			userIDCallback := callback.From.ID
 
-			exists, err := crud.CheckUserExists(crudDB, userIDCallback)
+			userLanguageCodeCallback := callback.From.LanguageCode
+			userNameCallback := callback.From.UserName
+			firstNameCallback := callback.From.FirstName
+
+			role, err := mariadb.GetUserRole(database, userIDCallback)
 			if err != nil {
-				log.Printf("Error al verificar si existe el usuario: %v", err)
-				msg := tgbotapi.NewMessage(chatID, "Error al verificar l'usuari. Si us plau, intenta-ho de nou.")
-				bot.Send(msg)
+				log.Printf("Error en obtenir el rol de l'usuari per a /start: %v", err)
 				return
 			}
-			if !exists {
-				msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("No s'ha trobat cap usuari amb la ID %d. Torna a intentar-ho", userIDCallback))
-				bot.Send(msg)
+			if role == "" {
+				LogDeletedUserAccess(userIDCallback, userNameCallback, firstNameCallback, userLanguageCodeCallback, chatID)
 				return
 			}
 
@@ -522,7 +539,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				createUserStep[chatID] = "ask_id"
 				msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix la ID de l'usuari:")
 				bot.Send(msg)
-			case data == "crud_actualitzar":
+			case data == "crud_modificar":
 				waitingForUserToModifyID[chatID] = true
 				msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix la ID de l'usuari que vols modificar:")
 				bot.Send(msg)
@@ -541,8 +558,8 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 			case strings.HasPrefix(data, "get_storage_info_"):
 				instance := strings.TrimPrefix(data, "get_storage_info_")
 				querys.GetStorageUsage(bot, chatID, instance)
-			case strings.HasPrefix(data, "get_network_info_"):
-				instance := strings.TrimPrefix(data, "get_network_info_")
+			case strings.HasPrefix(data, "get_active_ports_"):
+				instance := strings.TrimPrefix(data, "get_active_ports_")
 				querys.GetActivePorts(bot, chatID, instance)
 			case data == "access_discover":
 				keyboard := keyboards.GetDiscoverKeyboard()
@@ -560,7 +577,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 					return
 				}
 
-				msg = tgbotapi.NewMessage(chatID, fmt.Sprintf("%s", output))
+				msg = tgbotapi.NewMessage(chatID, output)
 				bot.Send(msg)
 			case data == "discover_port_exporter":
 				msg := tgbotapi.NewMessage(chatID, "Descobriment per a Port Exporter inicialitzat.")
@@ -573,8 +590,26 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 					return
 				}
 
-				msg = tgbotapi.NewMessage(chatID, fmt.Sprintf("%s", output))
+				msg = tgbotapi.NewMessage(chatID, output)
 				bot.Send(msg)
+			case data == "back":
+				messageText := "Selecciona una opció:"
+
+				switch role {
+				case "admin":
+					keyboard = keyboards.GetAdminStartKeyboard()
+				case "worker":
+					keyboard = keyboards.GetWorkerStartKeyboard()
+				}
+				msg := tgbotapi.NewMessage(chatID, messageText)
+				msg.ReplyMarkup = &keyboard
+				_, err = bot.Send(msg)
+				if err != nil {
+					log.Printf("Error en enviar missatge de tornada al menú principal: %v", err)
+				}
+				return
+			case data == "back_instance":
+				querys.QueryActiveNodes(bot, chatID)
 			}
 		}
 	}

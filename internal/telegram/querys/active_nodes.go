@@ -48,6 +48,10 @@ func QueryActiveNodes(bot *tgbotapi.BotAPI, chatID int64) {
 		}
 	}
 
+	keyboardRows = append(keyboardRows, []tgbotapi.InlineKeyboardButton{
+		tgbotapi.NewInlineKeyboardButtonData("Tornar", "back"),
+	})
+
 	if len(keyboardRows) > 0 {
 		keyboard := tgbotapi.NewInlineKeyboardMarkup(keyboardRows...)
 		msg := tgbotapi.NewMessage(chatID, "Instàncies Actives:")
