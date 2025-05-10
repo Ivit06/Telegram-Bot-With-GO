@@ -18,6 +18,7 @@ func GetCRUDKeyboard() tgbotapi.InlineKeyboardMarkup {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Tornar", "back"),
+			tgbotapi.NewInlineKeyboardButtonData("Cancelar", "cancel"),
 		),
 	)
 }

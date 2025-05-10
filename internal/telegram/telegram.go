@@ -610,6 +610,16 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				return
 			case data == "back_instance":
 				querys.QueryActiveNodes(bot, chatID)
+			case data == "cancel":
+				delete(waitingForUserID, chatID)
+				delete(deleteAttempts, chatID)
+				delete(modifyUserState, chatID)
+				delete(modifyUserStep, chatID)
+				delete(waitingForUserToModifyID, chatID)
+				delete(createUserState, chatID)
+				delete(createUserStep, chatID)
+				msg := tgbotapi.NewMessage(chatID, "S'han cancel·lat tots els processos en curs del CRUD.")
+				bot.Send(msg)
 			}
 		}
 	}
