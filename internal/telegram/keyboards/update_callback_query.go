@@ -13,7 +13,7 @@ func GetCRUDKeyboard() tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("Llistar", "crud_llistar"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Modificar", "crud_modificar"),
+			tgbotapi.NewInlineKeyboardButtonData("Actualitzar", "crud_actualitzar"),
 			tgbotapi.NewInlineKeyboardButtonData("Eliminar", "crud_eliminar"),
 		),
 		tgbotapi.NewInlineKeyboardRow(

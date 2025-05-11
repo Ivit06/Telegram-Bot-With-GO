@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func ModificarUsuari(db *sql.DB, id int64, nombre, apellido, segundoApellido, rol string) error {
+func ActualitzarUsuari(db *sql.DB, id int64, nombre, apellido, segundoApellido, rol string) error {
 	query := "UPDATE usuaris SET"
 	var args []interface{}
 	var setClauses []string

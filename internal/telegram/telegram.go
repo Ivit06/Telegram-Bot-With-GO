@@ -482,12 +482,12 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 						segundoApellido := modifyUserState[chatID]["segundo_apellido"]
 						rolFinal := modifyUserState[chatID]["rol"]
 
-						err := crud.ModificarUsuari(crudDB, userIDToModify, nombre, apellido, segundoApellido, rolFinal)
+						err := crud.ActualitzarUsuari(crudDB, userIDToModify, nombre, apellido, segundoApellido, rolFinal)
 						if err != nil {
-							msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error al modificar l'usuari amb ID %d: %v", userIDToModify, err))
+							msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error al actualitzar l'usuari amb ID %d: %v", userIDToModify, err))
 							bot.Send(msg)
 						} else {
-							msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Usuari amb ID %d modificat correctament.", userIDToModify))
+							msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Usuari amb ID %d actualitzar correctament.", userIDToModify))
 							bot.Send(msg)
 						}
 
@@ -551,9 +551,9 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				createUserStep[chatID] = "ask_id"
 				msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix la ID de l'usuari:")
 				bot.Send(msg)
-			case data == "crud_modificar":
+			case data == "crud_actualitzar":
 				waitingForUserToModifyID[chatID] = true
-				msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix la ID de l'usuari que vols modificar:")
+				msg := tgbotapi.NewMessage(chatID, "Si us plau, introdueix la ID de l'usuari que vols actualitzar:")
 				bot.Send(msg)
 			case strings.HasPrefix(data, "node_"):
 				instance := strings.TrimPrefix(data, "node_")
