@@ -33,7 +33,7 @@ func ModificarUsuari(db *sql.DB, id int64, nombre, apellido, segundoApellido, ro
 		return nil
 	}
 
-	query += " " + fmt.Sprintf(strings.Join(setClauses, ", ")) + " WHERE id = ?"
+	query += " " + strings.Join(setClauses, ", ") + " WHERE id = ?"
 	args = append(args, id)
 
 	stmt, err := db.Prepare(query)
