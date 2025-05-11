@@ -12,7 +12,7 @@ func GetAdminStartKeyboard() tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("Autodescobriment", "access_discover"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Instàncies Actives", "show_active_instances"),
+			tgbotapi.NewInlineKeyboardButtonData("Instàncies actives", "show_active_instances"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Accedir al CRUD", "access_crud"),
@@ -23,7 +23,7 @@ func GetAdminStartKeyboard() tgbotapi.InlineKeyboardMarkup {
 func GetWorkerStartKeyboard() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Instàncies Actives", "show_active_instances"),
+			tgbotapi.NewInlineKeyboardButtonData("Instàncies actives", "show_active_instances"),
 		),
 	)
 }

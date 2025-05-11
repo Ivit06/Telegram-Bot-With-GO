@@ -487,7 +487,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 							msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error al actualitzar l'usuari amb ID %d: %v", userIDToModify, err))
 							bot.Send(msg)
 						} else {
-							msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Usuari amb ID %d actualitzar correctament.", userIDToModify))
+							msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Usuari amb ID %d actualitzat correctament.", userIDToModify))
 							bot.Send(msg)
 						}
 
