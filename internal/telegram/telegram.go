@@ -57,7 +57,17 @@ func SetWebhook(bot *tgbotapi.BotAPI) error {
 	return nil
 }
 
-func LogUnauthorizedAccess(userID int64, userName string, firstName string, userLanguageCode string, chatID int64) {
+func SendUnauthorizedMessage(bot *tgbotapi.BotAPI) error {
+	godotenv.Load()
+	chatIDStr := os.Getenv("CHAT_ID_GROUP")
+	adminChatID, _ := strconv.ParseInt(chatIDStr, 10, 64)
+	message := "Algú està intentant accedir al bot"
+	msg := tgbotapi.NewMessage(adminChatID, message)
+	_, err := bot.Send(msg)
+	return err
+}
+
+func LogUnauthorizedAccess(bot *tgbotapi.BotAPI, userID int64, userName string, firstName string, userLanguageCode string, chatID int64) {
 	f, _ := os.OpenFile("logs/unauthorized_access.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	defer f.Close()
 	loc, _ := time.LoadLocation("Europe/Madrid")
@@ -65,9 +75,10 @@ func LogUnauthorizedAccess(userID int64, userName string, firstName string, user
 	logLine := fmt.Sprintf("[%s] Intent usuari no autoritzat - ID: %d, nom d'usuari: %s, primer nom: %s, idioma: %s, ID del xat: %d\n",
 		currentTime, userID, userName, firstName, userLanguageCode, chatID)
 	f.WriteString(logLine)
+	SendUnauthorizedMessage(bot)
 }
 
-func LogDeletedUserAccess(userID int64, userName string, firstName string, userLanguageCode string, chatID int64) {
+func LogDeletedUserAccess(bot *tgbotapi.BotAPI, userID int64, userName string, firstName string, userLanguageCode string, chatID int64) {
 	f, _ := os.OpenFile("logs/old_user_access.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	defer f.Close()
 	loc, _ := time.LoadLocation("Europe/Madrid")
@@ -75,6 +86,7 @@ func LogDeletedUserAccess(userID int64, userName string, firstName string, userL
 	logLine := fmt.Sprintf("[%s] Intent usuari antic - ID: %d, nom d'usuari: %s, primer nom: %s, idioma: %s, ID del xat: %d\n",
 		currentTime, userID, userName, firstName, userLanguageCode, chatID)
 	f.WriteString(logLine)
+	SendUnauthorizedMessage(bot)
 }
 
 func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.HandlerFunc {
@@ -115,7 +127,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 						log.Printf("Error en enviar el missatge amb el teclat per a /start: %v", err)
 					}
 				} else {
-					LogUnauthorizedAccess(userID, userName, firstName, userLanguageCode, chatID)
+					LogUnauthorizedAccess(bot, userID, userName, firstName, userLanguageCode, chatID)
 				}
 				return
 			}
@@ -174,7 +186,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 						}
 					}
 				case "":
-					LogUnauthorizedAccess(userID, userName, firstName, userLanguageCode, chatID)
+					LogUnauthorizedAccess(bot, userID, userName, firstName, userLanguageCode, chatID)
 				}
 
 				msg := tgbotapi.NewMessage(chatID, helpText)
@@ -509,7 +521,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				return
 			}
 			if role == "" {
-				LogDeletedUserAccess(userIDCallback, userNameCallback, firstNameCallback, userLanguageCodeCallback, chatID)
+				LogDeletedUserAccess(bot, userIDCallback, userNameCallback, firstNameCallback, userLanguageCodeCallback, chatID)
 				return
 			}
 
