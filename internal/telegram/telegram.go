@@ -89,7 +89,7 @@ func LogDeletedUserAccess(bot *tgbotapi.BotAPI, userID int64, userName string, f
 	SendUnauthorizedMessage(bot)
 }
 
-func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.HandlerFunc {
+func HandleWebhook(bot *tgbotapi.BotAPI, slaveDatabase *sql.DB, masterDatabase *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		update, err := bot.HandleUpdate(r)
 		if err != nil {
@@ -105,7 +105,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 			firstName := update.Message.From.FirstName
 
 			if update.Message.Command() == "start" {
-				role, err := mariadb.GetUserRole(database, userID)
+				role, err := mariadb.GetUserRole(slaveDatabase, userID)
 				if err != nil {
 					log.Printf("Error en obtenir el rol de l'usuari per a /start: %v", err)
 					return
@@ -136,7 +136,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				userID := update.Message.From.ID
 				chatID := update.Message.Chat.ID
 
-				role, err := mariadb.GetUserRole(database, userID)
+				role, err := mariadb.GetUserRole(slaveDatabase, userID)
 				if err != nil {
 					log.Printf("Error en obtenir el rol de l'usuari per a /help: %v", err)
 					msg := tgbotapi.NewMessage(chatID, "Error en obtenir la informació d'ajuda.")
@@ -207,7 +207,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 					return
 				}
 
-				rowsAffected, err := crud.EliminarUsuari(crudDB, int64(idToDelete))
+				rowsAffected, err := crud.EliminarUsuari(masterDatabase, int64(idToDelete))
 				attempts := deleteAttempts[chatID]
 				deleteAttempts[chatID] = attempts + 1
 				if err != nil {
@@ -339,7 +339,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 						apellido := createUserState[chatID]["apellido"]
 						segundoApellido := createUserState[chatID]["segundo_apellido"]
 
-						err := crud.CrearUsuari(crudDB, id, rol, nombre, apellido, segundoApellido)
+						err := crud.CrearUsuari(masterDatabase, id, rol, nombre, apellido, segundoApellido)
 						if err != nil {
 							msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error al crear l'usuari amb ID %d, nom %s %s %s amb rol %s: %v", id, nombre, apellido, segundoApellido, rol, err))
 							bot.Send(msg)
@@ -368,7 +368,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 					return
 				}
 
-				exists, err := crud.CheckUserExists(crudDB, idToModify)
+				exists, err := crud.CheckUserExists(masterDatabase, idToModify)
 				if err != nil {
 					log.Printf("Error al verificar si existe el usuario: %v", err)
 					msg := tgbotapi.NewMessage(chatID, "Error al verificar l'usuari. Si us plau, intenta-ho de nou.")
@@ -482,7 +482,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 						segundoApellido := modifyUserState[chatID]["segundo_apellido"]
 						rolFinal := modifyUserState[chatID]["rol"]
 
-						err := crud.ActualitzarUsuari(crudDB, userIDToModify, nombre, apellido, segundoApellido, rolFinal)
+						err := crud.ActualitzarUsuari(masterDatabase, userIDToModify, nombre, apellido, segundoApellido, rolFinal)
 						if err != nil {
 							msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Error al actualitzar l'usuari amb ID %d: %v", userIDToModify, err))
 							bot.Send(msg)
@@ -515,7 +515,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 			userNameCallback := callback.From.UserName
 			firstNameCallback := callback.From.FirstName
 
-			role, err := mariadb.GetUserRole(database, userIDCallback)
+			role, err := mariadb.GetUserRole(slaveDatabase, userIDCallback)
 			if err != nil {
 				log.Printf("Error en obtenir el rol de l'usuari per a /start: %v", err)
 				return
@@ -542,7 +542,7 @@ func HandleWebhook(bot *tgbotapi.BotAPI, database *sql.DB, crudDB *sql.DB) http.
 				msg.ReplyMarkup = &keyboard
 				bot.Send(msg)
 			case data == "crud_llistar":
-				crud.LlistarElements(bot, chatID, crudDB)
+				crud.LlistarElements(bot, chatID, slaveDatabase)
 			case data == "crud_eliminar":
 				waitingForUserID[chatID] = true
 				msg := tgbotapi.NewMessage(chatID, "Si us plau, introduïu l'ID de l'usuari que voleu eliminar.")

@@ -25,27 +25,27 @@ func main() {
 		log.Fatalf("Error en configurar el webhook: %v", err)
 	}
 
-	database, err := mariadb.InitDB()
+	slaveDatabase, err := mariadb.InitDB()
 	if err != nil {
 		log.Fatalf("Error en inicialitzar la base de dades: %v", err)
 	}
 	defer func() {
-		if err := database.Close(); err != nil {
+		if err := slaveDatabase.Close(); err != nil {
 			log.Printf("Error en tancar la base de dades: %v", err)
 		}
 	}()
 
-	crudDatabase, err := mariadb.InitDBCRUD()
+	masterDatabase, err := mariadb.InitDBCRUD()
 	if err != nil {
 		log.Fatalf("Error en inicialitzar la base de dades del CRUD: %v", err)
 	}
 	defer func() {
-		if err := crudDatabase.Close(); err != nil {
+		if err := masterDatabase.Close(); err != nil {
 			log.Printf("Error en tancar la base de dades del CRUD: %v", err)
 		}
 	}()
 
-	http.HandleFunc("/", telegram.HandleWebhook(bot, database, crudDatabase))
+	http.HandleFunc("/", telegram.HandleWebhook(bot, slaveDatabase, masterDatabase))
 
 	port := os.Getenv("PORT")
 	serverAddress := fmt.Sprintf(":%s", port)
