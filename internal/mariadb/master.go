@@ -10,8 +10,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var masterDatabase *sql.DB
-
 func InitDBCRUD() (*sql.DB, error) {
 	godotenv.Load()
 	dbCRUDUser := os.Getenv("DB_USER_CRUD")
@@ -23,7 +21,7 @@ func InitDBCRUD() (*sql.DB, error) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbCRUDUser, dbCRUDPass, dbCRUDHost, dbCRUDPort, dbCRUDName)
 
 	var err error
-	masterDatabase, err = sql.Open("mysql", dsn)
+	masterDatabase, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("no s'ha pogut connectar a la base de dades del CRUD: %w", err)
 	}
