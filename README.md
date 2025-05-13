@@ -128,24 +128,21 @@ Les seves funcions principals són les següents:
    Per a realitzar a l'execució del bot primer hem d'iniciar els serveis comentats, per al seu correcte funcionament:
 
    Prometheus:
-   
     ```bash
     systemctl status prometheus.service
     ```   
-   
+
    Ngrok:
-   
     ```bash
     ngrok http --url=adreça_ngrok Port
     ```   
 
    Bot:
-
     ```bash
     go run main/main.go (Estant en l'arrel del projecte)
     ```   
-
-    Amb tot això podríem anar a l'aplicació de Telegram i interactuar amb el nostre bot.
+    
+   Amb tot això podríem anar a l'aplicació de Telegram i interactuar amb el nostre bot.
 
 ## Llicència
 <font style="vertical-align: inherit;"><font style="vertical-align: inherit;">
