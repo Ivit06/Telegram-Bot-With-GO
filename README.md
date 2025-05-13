@@ -35,7 +35,7 @@ Les seves funcions principals són les següents:
     
 3.  **Webhook:**
 
-      Webhook és una forma en què una aplicació pot proporcionar informació en temps real a una altra aplicació amb poca o gens de demora. També conegut com "Reverse API".
+      Webhook és una forma en què una aplicació pot proporcionar informació en temps real a una altra. També conegut com "Reverse API".
    
       Per fer això es poden fer ús de diferents mètodes. És important que el domini o subdomini que utilitzem per webhook sigui SSL perquè si no l'API de Telegram no accepta ni peticions ni respostes a l'URL.
    
