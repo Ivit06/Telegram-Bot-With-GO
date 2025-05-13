@@ -21,6 +21,7 @@ Les seves funcions principals són les següents:
     ```bash
      apt install golang-go
     ```
+
    
 2.  **Descàrrega les dependències:**
 
@@ -30,35 +31,37 @@ Les seves funcions principals són les següents:
     ```bash
      go mod tidy
     ```
+
     
 3.  **Webhook:**
 
-   Webhook és una forma en què una aplicació pot proporcionar informació en temps real a una altra aplicació amb poca o gens de demora. També conegut com "Reverse API".
-
-   Per fer això es poden fer ús de diferents mètodes. És important que el domini o subdomini que utilitzem per webhook sigui SSL perquè si no l'API de Telegram no accepta ni peticions ni respostes a l'URL.
-
-   En el nostre cas hem fet servir Ngrok.
-
-   Aquest és un servei amb opcions de pagament i gratuïtes. Per poder fer l'instal·lació podeu anar a la seva pàgina web i fer les passes indicades per ells mateixos.
+      Webhook és una forma en què una aplicació pot proporcionar informació en temps real a una altra aplicació amb poca o gens de demora. També conegut com "Reverse API".
    
-   https://ngrok.com/
+      Per fer això es poden fer ús de diferents mètodes. És important que el domini o subdomini que utilitzem per webhook sigui SSL perquè si no l'API de Telegram no accepta ni peticions ni respostes a l'URL.
+   
+      En el nostre cas hem fet servir Ngrok.
+   
+      Aquest és un servei amb opcions de pagament i gratuïtes. Per poder fer l'instal·lació podeu anar a la seva pàgina web i fer les passes indicades per ells mateixos.
+   
+      https://ngrok.com/
     
 
 4.  **Base de dades (master/slave):**
 
-   Per a l'ús del nostre codi s'han d'instal·lar dues bases de dades en dues instàncies diferents. Una master i l'altre slave.
-
-   Realitzar la configuració de les bases de dades en una única instància, és opcional. Per a això s'hauran de fer modificacions en el codi perquè únicament es tractin les dades des de la mateixa instància.
-
-   Per a la instal·lació del motor de base de dades (En el nostre cas MariaDB):
+      Per a l'ús del nostre codi s'han d'instal·lar dues bases de dades en dues instàncies diferents. Una master i l'altre slave.
    
-   ```bash
-     sudo apt install mariadb-server
-   ```
+      Realitzar la configuració de les bases de dades en una única instància, és opcional. Per a això s'hauran de fer modificacions en el codi perquè únicament es tractin les dades des de la mateixa instància.
+   
+      Per a la instal·lació del motor de base de dades (En el nostre cas MariaDB):
+      
+      ```bash
+        sudo apt install mariadb-server
+      ```
+   
+      Per a realitzar la configuració master/slave revisar documentació del motor de base de dades:
+   
+      https://mariadb.com/kb/en/setting-up-replication/
 
-   Per a realitzar la configuració master/slave revisar documentació del motor de base de dades:
-
-   https://mariadb.com/kb/en/setting-up-replication/
 
 5. **Prometheus**
    
@@ -116,11 +119,11 @@ Les seves funcions principals són les següents:
     ```bash
     git clone https://github.com/Ivit06/Telegram-Bot-With-GO.git
     ```
-   Una vegada clonat el repositori s'han de canviar les credencials de l'arxiu .env amb les vostres.
+      Una vegada clonat el repositori s'han de canviar les credencials de l'arxiu .env amb les vostres.
+      
+      Per a més informació poden consultar el nostre manual tècnic:
    
-   Per a més informació poden consultar el nostre manual tècnic:
-
-   https://docs.google.com/document/d/1TidJjzkEQWyAxgp-SP6ZBXoHj5kMYe0DUvQX_fl_P2U/edit?usp=drive_link
+      https://docs.google.com/document/d/1TidJjzkEQWyAxgp-SP6ZBXoHj5kMYe0DUvQX_fl_P2U/edit?usp=drive_link
 
 
 ## Execució
