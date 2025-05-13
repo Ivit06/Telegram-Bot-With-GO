@@ -218,6 +218,10 @@ func HandleWebhook(bot *tgbotapi.BotAPI, slaveDatabase *sql.DB, masterDatabase *
 				} else if rowsAffected > 0 {
 					msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Usuari amb ID %d eliminat correctament.", idToDelete))
 					bot.Send(msg)
+					delete(waitingForUserID, chatID)
+					delete(deleteAttempts, chatID)
+					return
+					
 				} else {
 					msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("No s'ha trobat cap usuari amb ID %d per eliminar. Et queden %d intents.", idToDelete, 2-attempts))
 					bot.Send(msg)
