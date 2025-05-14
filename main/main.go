@@ -29,21 +29,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error en inicialitzar la base de dades: %v", err)
 	}
-	defer func() {
-		if err := slaveDatabase.Close(); err != nil {
-			log.Printf("Error en tancar la base de dades: %v", err)
-		}
-	}()
+	defer slaveDatabase.Close()
 
 	masterDatabase, err := mariadb.InitDBCRUD()
 	if err != nil {
 		log.Fatalf("Error en inicialitzar la base de dades del CRUD: %v", err)
 	}
-	defer func() {
-		if err := masterDatabase.Close(); err != nil {
-			log.Printf("Error en tancar la base de dades del CRUD: %v", err)
-		}
-	}()
+	defer masterDatabase.Close()
 
 	http.HandleFunc("/", telegram.HandleWebhook(bot, slaveDatabase, masterDatabase))
 
