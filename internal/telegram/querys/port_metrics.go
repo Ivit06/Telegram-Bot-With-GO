@@ -35,7 +35,7 @@ func GetActivePorts(bot *tgbotapi.BotAPI, chatID int64, instance string) {
 	json.NewDecoder(resp.Body).Decode(&prometheusResponse)
 
 	var openPorts []string
-	if prometheusResponse.Status == "success" && prometheusResponse.Data.ResultType == "vector" {
+	if prometheusResponse.Status == "success" {
 		for _, result := range prometheusResponse.Data.Result {
 			if portStr, ok := result.Metric["port"]; ok {
 				openPorts = append(openPorts, portStr)
